@@ -1,13 +1,12 @@
+from teamfixture import TeamFixture
 class Team():
-    def __init__(self, id, name, league_position):
-        self._id = id
-        self.name = name
-        self.league_position = league_position
-        self._results = self.find_results()
-        self._fixtures = self.find_fixtures()
+    def __init__(self, data: dict):
+        self.id = data["id"]
+        self.name = data["name"]
+        self.short_name = data["short_name"]
+        self.position = data["position"]
+        self.results = [None] * 5  #will be replaced by TeamFixuture objects
+        self.form = self.calculate_form()
 
-    def find_results(self):
-        pass
-    
-    def find_fixtures(self):
+    def calculate_form(self):
         pass
