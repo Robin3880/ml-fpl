@@ -81,6 +81,12 @@ for _, fixture in fixtures.iterrows():
                         pf.bonus = value
                     elif identifier == "bps":
                         pf.bps = value
+                    elif identifier == "defensive_contribution":
+                        pf.dc = value
+                    elif identifier == "penalties_missed":
+                        pf.pm = value
+                    elif identifier == "penalties_saved":
+                        pf.ps = value
 
 
 

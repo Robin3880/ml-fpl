@@ -8,7 +8,7 @@ class Player:
         self.second_name = player["second_name"]
         self.team = team
         self.selected_by_percent = player["selected_by_percent"]
-        self.chance_of_playing_this_round = player["chance_of_playing_this_round"]
+        self.chance_of_playing_this_round = player["chance_of_playing_this_round"]  
         self.element_type = player["element_type"]  # 1=GK, 2=DEF, 3=MID, 4=FWD
         self.points_per_game = player["points_per_game"]
         self.minutes = player["minutes"]
@@ -20,7 +20,6 @@ class Player:
         self.bps = player["bps"]
         self.assists = player["assists"]
         self.expected_assists = player["expected_assists"]
-        self.expected_goal_involvements = player["expected_goal_involvements"]
         self.results = [None] * 5  #will be replaced by PlayerFixture objects
 
         self.fixtures = [None] * 5 #will be replaced by Team objects
@@ -31,6 +30,7 @@ class Player:
 
     def calculate_pts_form(self):
         pass
+
     def find_fixtures(self):
         pass
 

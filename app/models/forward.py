@@ -5,4 +5,6 @@ class Forward(Player):
         super().__init__(player, team_name)
         self.goals_scored = player["goals_scored"]
         self.expected_goals = player["expected_goals"]
-        self.calculate_pts_form()  #for eaach fixture caclulate points based off stats
+        self.calculate_pts_form()  #for each fixture caclulate points based off stats
+
+    
