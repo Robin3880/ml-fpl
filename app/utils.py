@@ -18,27 +18,27 @@ for event in data["events"]:  #assumes season has started
         current_gw = event["id"]
     else:
         break
-    
+
 teams = pd.DataFrame(data['teams'])
 team_dict = {}
 for _, team in teams.iterrows():
     id = team["id"]
-    team_dict[id] = Team(data)
+    team_dict[id] = Team(team)
     
 players = pd.DataFrame(data['elements'])
 player_dict = {}
 for _, player in players.iterrows():
-    team = team_dict[data["team"]]
-    position = data["element_type"]
-    id = data["id"]
+    team = team_dict[player["team"]]
+    position = player["element_type"]
+    id = player["id"]
     if position == 1:
-        player_dict[id] = Goalkeeper(data, team)
+        player_dict[id] = Goalkeeper(player, team)
     elif position == 2:
-        player_dict[id] = Defender(data, team)
+        player_dict[id] = Defender(player, team)
     elif position == 3:
-        player_dict[id] = Midfielder(data, team)
+        player_dict[id] = Midfielder(player, team)
     elif position == 4:
-        player_dict[id] = Forward(data, team)
+        player_dict[id] = Forward(player, team)
 
 url = "https://fantasy.premierleague.com/api/fixtures/"
 data = requests.get(url).json()
@@ -86,4 +86,3 @@ for _, fixture in fixtures.iterrows():
 
     elif 0 > index >= -5:  #get next 5 gw fixtures and add to future fixtures
         fixture = FutureFixture(team_dict[fixture["team_a"]], team_dict[fixture["team_h"]])
-
