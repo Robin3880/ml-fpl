@@ -6,7 +6,6 @@ from models.defender import Defender
 from models.midfielder import Midfielder
 from models.forward import Forward
 from models.teamfixture import TeamFixture
-from models.futurefixture import FutureFixture
 from models.playerfixture import PlayerFixture
 
 url = "https://fantasy.premierleague.com/api/bootstrap-static/"
@@ -32,13 +31,13 @@ for _, player in players.iterrows():
     position = player["element_type"]
     id = player["id"]
     if position == 1:
-        player_dict[id] = Goalkeeper(player, team)
+        player_dict[id] = Goalkeeper(player, team, season="current")
     elif position == 2:
-        player_dict[id] = Defender(player, team)
+        player_dict[id] = Defender(player, team, season="current")
     elif position == 3:
-        player_dict[id] = Midfielder(player, team)
+        player_dict[id] = Midfielder(player, team, season="current")
     elif position == 4:
-        player_dict[id] = Forward(player, team)
+        player_dict[id] = Forward(player, team, season="current")
 
 url = "https://fantasy.premierleague.com/api/fixtures/"
 data = requests.get(url).json()
@@ -47,13 +46,7 @@ data = requests.get(url).json()
 fixtures = pd.DataFrame(data)
 for _, fixture in fixtures.iterrows():
     gameweek = fixture["event"]
-    index = current_gw - gameweek
-    if 0 < index <= 5:  #ignore current gw as not all games are finished,  only taking last 5 gw data as most relevant
-
-        #assign team stats
-        team_dict[fixture["team_a"]].results[index-1] = TeamFixture("away", fixture["team_a_score"], fixture["team_h_score"], team_dict[fixture["team_h"]])
-        team_dict[fixture["team_h"]].results[index-1] = TeamFixture("home", fixture["team_h_score"], fixture["team_a_score"], team_dict[fixture["team_a"]])
-        
+    if gameweek < current_gw:  #ignore current gw as maybe not all games are finished
         #assign player stats
         for stat in fixture["stats"]:
             identifier = stat["identifier"]  
@@ -63,12 +56,10 @@ for _, fixture in fixtures.iterrows():
                     value = entry["value"]
                     player = player_dict[player_id]
 
-                    
-                    if player.results[index-1] is None:  # Initialize PlayerFixture if not already initialized in player.results list
-                        opponent = team_dict[fixture["team_a"]] if side == "h" else team_dict[fixture["team_h"]]
-                        player.results[index-1] = PlayerFixture(opponent=opponent)
+                    opponent_strength = team_dict[fixture["team_a_difficulty"]] if side == "h" else team_dict[fixture["team_h_difficulty"]]
+                    player.results.append(PlayerFixture(opponent_strength=opponent_strength))
 
-                    pf = player.results[index-1]
+                    pf = player.results[-1]
                     if identifier == "goals_scored":
                         pf.goals = value
                     elif identifier == "assists":
@@ -87,8 +78,17 @@ for _, fixture in fixtures.iterrows():
                         pf.pm = value
                     elif identifier == "penalties_saved":
                         pf.ps = value
+    elif 0 > current_gw-gameweek >= -5:  #get next 5 gw fixtures and add to future fixtures
+        team_dict[fixture["team_a"]].fixtures[gameweek-current_gw-1] = TeamFixture("away", fixture["team_a_score"], fixture["team_h_score"], team_dict[fixture["team_h"]])
+        team_dict[fixture["team_h"]].fixtures[gameweek-current_gw-1] = TeamFixture("home", fixture["team_h_score"], fixture["team_a_score"], team_dict[fixture["team_a"]])
 
 
-
-    elif 0 > index >= -5:  #get next 5 gw fixtures and add to future fixtures
-        fixture = FutureFixture(team_dict[fixture["team_a"]], team_dict[fixture["team_h"]])
+# --- PRINT ALL PLAYERS ---
+print("\n==== PLAYERS ====")
+for player in player_dict.values():
+    print(player)
+    
+# --- PRINT ALL TEAMS ---
+print("==== TEAMS ====")
+for team in team_dict.values():
+    print(team)

@@ -5,3 +5,4 @@ class TeamFixture():
         self.goals_scored = goals_scored
         self.goals_conceded = goals_conceded
         self.opponent = opponent
+        self.opponent_strength = opponent.strength
