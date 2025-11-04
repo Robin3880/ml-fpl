@@ -39,6 +39,17 @@ for _, player in players.iterrows():
     elif position == 4:
         player_dict[id] = Forward(player, team, season="current")
 
+# get player minutes data
+url = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/refs/heads/master/data/2025-26/player_idlist.csv"
+df = pd.read_csv(url)
+for _, player in df.iterrows():
+    url = f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/refs/heads/master/data/2025-26/players/{player["first_name"]}_{player["second_name"]}_{player["id"]}/gws.csv"
+    player_df = pd.read_csv(url)
+    for i, gw in player_df.iterrows():
+        player_dict[player["id"]].results[i].minutes = gw["minutes"]
+
+
+
 url = "https://fantasy.premierleague.com/api/fixtures/"
 data = requests.get(url).json()
 
@@ -56,10 +67,9 @@ for _, fixture in fixtures.iterrows():
                     value = entry["value"]
                     player = player_dict[player_id]
 
-                    opponent_strength = team_dict[fixture["team_a_difficulty"]] if side == "h" else team_dict[fixture["team_h_difficulty"]]
-                    player.results.append(PlayerFixture(opponent_strength=opponent_strength))
+                    pf = player.results[gameweek-1]
+                    pf.opponent_strength = fixture["team_a_difficulty"] if side == "h" else fixture["team_h_difficulty"]
 
-                    pf = player.results[-1]
                     if identifier == "goals_scored":
                         pf.goals = value
                     elif identifier == "assists":
@@ -78,9 +88,9 @@ for _, fixture in fixtures.iterrows():
                         pf.pm = value
                     elif identifier == "penalties_saved":
                         pf.ps = value
-    elif 0 > current_gw-gameweek >= -5:  #get next 5 gw fixtures and add to future fixtures
-        team_dict[fixture["team_a"]].fixtures[gameweek-current_gw-1] = TeamFixture("away", fixture["team_a_score"], fixture["team_h_score"], team_dict[fixture["team_h"]])
-        team_dict[fixture["team_h"]].fixtures[gameweek-current_gw-1] = TeamFixture("home", fixture["team_h_score"], fixture["team_a_score"], team_dict[fixture["team_a"]])
+    elif 0 < (gameweek - current_gw) <= 5:  #get next 5 gw fixtures and add to future fixtures
+        team_dict[fixture["team_a"]].fixtures[gameweek+1] = TeamFixture("away", fixture["team_a_score"], fixture["team_h_score"], team_dict[fixture["team_h"]])
+        team_dict[fixture["team_h"]].fixtures[gameweek+1] = TeamFixture("home", fixture["team_h_score"], fixture["team_a_score"], team_dict[fixture["team_a"]])
 
 
 # --- PRINT ALL PLAYERS ---
