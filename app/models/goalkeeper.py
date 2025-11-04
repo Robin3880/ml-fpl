@@ -4,8 +4,8 @@ from .team import Team
 
 
 class Goalkeeper(Player):
-    def __init__(self, player: dict, team: Team, season: str = "current"):
-        super().__init__(player, team, season)
+    def __init__(self, player: dict, team: Team, position: int, season: str = "current"):
+        super().__init__(player, team, position, season)
         self.penalties_saved = player["penalties_saved"]
         self.goals_conceded = player["goals_conceded"]
         self.saves = player["saves"]

@@ -4,8 +4,8 @@ from .team import Team
 
 
 class Defender(Player):
-    def __init__(self, player: dict, team: Team, season: str = "current"):
-        super().__init__(player, team, season)
+    def __init__(self, player: dict, team: Team, position: int, season: str = "current"):
+        super().__init__(player, team, position, season)
         self.goals_scored = player["goals_scored"]
         self.expected_goals = player["expected_goals"]
         self.clean_sheets = player["clean_sheets"]
@@ -13,3 +13,7 @@ class Defender(Player):
         self.clearances_blocks_interceptions = player["clearances_blocks_interceptions"]
         self.recoveries = player["recoveries"]
         self.calculate_pts_form()  #for eaach fixture caclulate points based off stats
+
+
+
+        
