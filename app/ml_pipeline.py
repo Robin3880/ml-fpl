@@ -84,7 +84,7 @@
 
 
 #take into account player availablity at end and add flag to player  (dont change xp)
-#remember to add penalties saved for gk, dc, cs, etc
+#remember to add penalties saved for gk,              dc, cs, etc
 
 
 import pandas as pd

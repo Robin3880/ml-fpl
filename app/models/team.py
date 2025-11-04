@@ -1,4 +1,6 @@
 from .teamfixture import TeamFixture
+
+
 class Team():
     def __init__(self, data: dict):
         self.id = data["id"]

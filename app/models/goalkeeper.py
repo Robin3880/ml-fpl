@@ -1,6 +1,8 @@
 from .player import Player
 from .team import Team
 #for each player create regressiontree etc to calculate xg, xa, xdc, xgc etc and then calculate total points by adding them (depending on position)
+
+
 class Goalkeeper(Player):
     def __init__(self, player: dict, team: Team, season: str = "current"):
         super().__init__(player, team, season)

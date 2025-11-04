@@ -1,6 +1,8 @@
 from .team import Team
+
+
 class PlayerFixture():
-    def __init__(self, goals=0, assists=0, yellow=0, red=0, bonus=0, bps=0, dc=0, pm=0, ps=0, opponent_strength=0):
+    def __init__(self, goals=0, assists=0, yellow=0, red=0, bonus=0, bps=0, dc=0, pm=0, ps=0, opponent_strength=0, minutes =0):
         self.goals = goals
         self.assists = assists
         self.yellow = yellow

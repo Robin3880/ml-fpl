@@ -1,6 +1,8 @@
 from .team import Team
 from .playerfixture import PlayerFixture
-#for each player create regressiontree etc to calculate xg, xa, xdc, xgc etc and then calculate total points by adding them (depending on position)
+#for each player create regressiontree etc to calculate xg, xa, xdc, xgc etc and then calculate total points by adding them (depending on position)?
+
+
 class Player:
     def __init__(self, player: dict, team: Team, season: str = "current"):
         self.id = player["id"]
@@ -20,7 +22,7 @@ class Player:
         self.own_goals = player.get("own_goals", 0)
         self.selected_by_percent = player.get("selected_by_percent", 0)
         self.chance_of_playing_this_round = player["chance_of_playing_this_round"] if season == "current" else None
-        self.results = []  
+        self.results = [PlayerFixture(minutes=0) for _ in range(36)]
         self.fixtures = self.find_fixtures() if season == "current" else []
         self.totals_per_gw = []  
 

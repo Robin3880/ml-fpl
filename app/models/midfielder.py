@@ -1,5 +1,7 @@
 from .player import Player
 from .team import Team
+
+
 class Midfielder(Player):
     def __init__(self, player: dict, team: Team, season: str = "current"):
         super().__init__(player, team, season)
