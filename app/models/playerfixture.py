@@ -1,19 +1,21 @@
 from .team import Team
 
-
 class PlayerFixture():
-    def __init__(self, goals=0, assists=0, yellow=0, red=0, bonus=0, bps=0, dc=0, pm=0, ps=0, opponent_strength=0, minutes =0):
+    def __init__(self, pts=0, position=None, minutes=0, goals=0, assists=0, cs=0, gc=0, yellow=0, red=0, bonus=0, bps=0, dc=0, pm=0, ps=0, xg=0, xa=0, xgc=0, opponent_strength=0):
+        self.pts = pts
+        self.minutes = minutes
         self.goals = goals
         self.assists = assists
-        self.yellow = yellow
+        self.cs = cs
+        self.gc = gc
+        self.yellow = yellow 
         self.red = red
         self.bonus = bonus
         self.bps = bps
         self.dc = dc
         self.pm = pm
         self.ps = ps
-        self.points = self.calc_pts() #calculate points based on position and stats
+        self.xg = xg
+        self.xa = xa
+        self.xgc = xgc
         self.opponent_strength = opponent_strength
-
-    def calc_pts(self):
-        pass

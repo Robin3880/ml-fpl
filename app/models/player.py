@@ -4,8 +4,9 @@ from .playerfixture import PlayerFixture
 
 
 class Player:
-    def __init__(self, player: dict, team: Team, season: str = "current"):
+    def __init__(self, player: dict, team: Team, position: str, season: str):
         self.id = player["id"]
+        self.position = position
         self.first_name = player["first_name"]
         self.second_name = player["second_name"]
         self.team = team
@@ -22,7 +23,7 @@ class Player:
         self.own_goals = player.get("own_goals", 0)
         self.selected_by_percent = player.get("selected_by_percent", 0)
         self.chance_of_playing_this_round = player["chance_of_playing_this_round"] if season == "current" else None
-        self.results = [PlayerFixture(minutes=0) for _ in range(36)]
+        self.results = [PlayerFixture(position=self.position) for _ in range(36)]
         self.fixtures = self.find_fixtures() if season == "current" else []
         self.totals_per_gw = []  
 

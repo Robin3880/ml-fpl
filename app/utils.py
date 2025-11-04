@@ -12,11 +12,14 @@ url = "https://fantasy.premierleague.com/api/bootstrap-static/"
 data = requests.get(url).json()
 
  
-for event in data["events"]:  #assumes season has started
-    if not event["is_next"]:
+
+current_gw = 0
+for event in data["events"]:
+    if event.get("is_current") is True:
         current_gw = event["id"]
-    else:
         break
+
+print(f"Current Gameweek is: {current_gw}")   #---------------------tests
 
 teams = pd.DataFrame(data['teams'])
 team_dict = {}
@@ -31,74 +34,68 @@ for _, player in players.iterrows():
     position = player["element_type"]
     id = player["id"]
     if position == 1:
-        player_dict[id] = Goalkeeper(player, team, season="current")
+        player_dict[id] = Goalkeeper(player, team, position, season="current")
     elif position == 2:
-        player_dict[id] = Defender(player, team, season="current")
+        player_dict[id] = Defender(player, team, position, season="current")
     elif position == 3:
-        player_dict[id] = Midfielder(player, team, season="current")
+        player_dict[id] = Midfielder(player, team, position, season="current")
     elif position == 4:
-        player_dict[id] = Forward(player, team, season="current")
+        player_dict[id] = Forward(player, team, position, season="current")
 
-# get player minutes data
-url = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/refs/heads/master/data/2025-26/player_idlist.csv"
-df = pd.read_csv(url)
-for _, player in df.iterrows():
-    url = f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/refs/heads/master/data/2025-26/players/{player["first_name"]}_{player["second_name"]}_{player["id"]}/gws.csv"
-    player_df = pd.read_csv(url)
-    for i, gw in player_df.iterrows():
-        player_dict[player["id"]].results[i].minutes = gw["minutes"]
+# get player data
+for player_id, player_obj in player_dict.items():
+    url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
+    player_detail_data = requests.get(url).json()
+    
+    for gw_data in player_detail_data["history"]:
+        gameweek = gw_data["round"]
+    
+        pf = player_obj.results[gameweek - 1]
+        
+        pf.pts = gw_data.get("total_points")
+        pf.minutes = gw_data.get("minutes")
+        pf.goals = gw_data.get("goals_scored")
+        pf.assists = gw_data.get("assists")
+        pf.clean_sheets = gw_data.get("clean_sheets")
+        pf.goals_conceded = gw_data.get("goals_conceded")
+        pf.yellow = gw_data.get("yellow_cards")
+        pf.red = gw_data.get("red_cards")
+        pf.bonus = gw_data.get("bonus")
+        pf.bps = gw_data.get("bps")
+        pf.dc = gw_data.get("defensive_contribution")
+        pf.pm = gw_data.get("penalties_missed")
+        pf.ps = gw_data.get("penalties_saved")
+        pf.xg = gw_data.get("expected_goals")
+        pf.xa = gw_data.get("expected_assists")
+        pf.xgc = gw_data.get("expected_goals_conceded")
+        
+        opponent_team_id = gw_data.get("opponent_team")                # change team so it shows its strength per results?-----------------------------------
+        if opponent_team_id in team_dict:
+                pf.opponent_strength = team_dict[opponent_team_id].strength
+
 
 
 
 url = "https://fantasy.premierleague.com/api/fixtures/"
 data = requests.get(url).json()
 
-
 fixtures = pd.DataFrame(data)
-for _, fixture in fixtures.iterrows():
-    gameweek = fixture["event"]
-    if gameweek < current_gw:  #ignore current gw as maybe not all games are finished
-        #assign player stats
-        for stat in fixture["stats"]:
-            identifier = stat["identifier"]  
-            for side in ["a", "h"]:
-                for entry in stat[side]:
-                    player_id = entry["element"]
-                    value = entry["value"]
-                    player = player_dict[player_id]
-
-                    pf = player.results[gameweek-1]
-                    pf.opponent_strength = fixture["team_a_difficulty"] if side == "h" else fixture["team_h_difficulty"]
-
-                    if identifier == "goals_scored":
-                        pf.goals = value
-                    elif identifier == "assists":
-                        pf.assists = value
-                    elif identifier == "yellow_cards":
-                        pf.yellow = value
-                    elif identifier == "red_cards":
-                        pf.red = value
-                    elif identifier == "bonus":
-                        pf.bonus = value
-                    elif identifier == "bps":
-                        pf.bps = value
-                    elif identifier == "defensive_contribution":
-                        pf.dc = value
-                    elif identifier == "penalties_missed":
-                        pf.pm = value
-                    elif identifier == "penalties_saved":
-                        pf.ps = value
-    elif 0 < (gameweek - current_gw) <= 5:  #get next 5 gw fixtures and add to future fixtures
-        team_dict[fixture["team_a"]].fixtures[gameweek+1] = TeamFixture("away", fixture["team_a_score"], fixture["team_h_score"], team_dict[fixture["team_h"]])
-        team_dict[fixture["team_h"]].fixtures[gameweek+1] = TeamFixture("home", fixture["team_h_score"], fixture["team_a_score"], team_dict[fixture["team_a"]])
+for _, fixture in fixtures.iterrows():                    ##----use this api to get teams strenght per results?-------------------------------
+    pass
 
 
-# --- PRINT ALL PLAYERS ---
+# --- PRINT PLAYERS ---
 print("\n==== PLAYERS ====")
-for player in player_dict.values():
-    print(player)
+for i, player in enumerate(player_dict.values()):
+    if i < 5: # limit to first 5 players for 
+        print(f"\nPlayer: {player.first_name} {player.second_name} ({player.team.name})")
+        # show stats for the last gameweek they played in
+        for gw in range(current_gw, 0, -1):
+            if player.results[gw-1].minutes > 0:
+                print(f"  -> Last Played GW{gw}: Mins={player.results[gw-1].minutes}, Goals={player.results[gw-1].goals}, CS={player.results[gw-1].clean_sheets}")
+                break
     
 # --- PRINT ALL TEAMS ---
-print("==== TEAMS ====")
-for team in team_dict.values():
-    print(team)
+# print("==== TEAMS ====")
+# for team in team_dict.values():
+#     print(team)
