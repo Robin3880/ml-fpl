@@ -2,6 +2,7 @@ from .team import Team
 
 class PlayerFixture():
     def __init__(self, pts=0, position=None, minutes=0, goals=0, assists=0, cs=0, gc=0, yellow=0, red=0, bonus=0, bps=0, dc=0, pm=0, ps=0, xg=0, xa=0, xgc=0, opponent_strength=0):
+        self.position = position
         self.pts = pts
         self.minutes = minutes
         self.goals = goals
