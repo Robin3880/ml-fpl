@@ -5,13 +5,9 @@ from models.goalkeeper import Goalkeeper
 from models.defender import Defender
 from models.midfielder import Midfielder
 from models.forward import Forward
-from models.teamfixture import TeamFixture
-from models.playerfixture import PlayerFixture
 
 url = "https://fantasy.premierleague.com/api/bootstrap-static/"
 data = requests.get(url).json()
-
- 
 
 current_gw = 0
 for event in data["events"]:
@@ -19,14 +15,15 @@ for event in data["events"]:
         current_gw = event["id"]
         break
 
-print(f"Current Gameweek is: {current_gw}")   #---------------------tests
+print(f"Current Gameweek is: {current_gw}")  
 
 teams = pd.DataFrame(data['teams'])
 team_dict = {}
 for _, team in teams.iterrows():
     id = team["id"]
     team_dict[id] = Team(team)
-    
+
+# get players
 players = pd.DataFrame(data['elements'])
 player_dict = {}
 for _, player in players.iterrows():
@@ -42,7 +39,23 @@ for _, player in players.iterrows():
     elif position == 4:
         player_dict[id] = Forward(player, team, position, season="current")
 
-# get player data
+# get teams strength per result
+url = "https://fantasy.premierleague.com/api/fixtures/"
+data = requests.get(url).json()
+
+fixtures = pd.DataFrame(data)
+for _, fixture in fixtures.iterrows():                   
+    gameweek = fixture["event"]
+
+    if gameweek is None:
+        continue
+
+    team_h = fixture["team_h"]
+    team_a = fixture["team_a"]
+    team_dict[team_h].fixture_strengths[gameweek-1] = fixture["team_h_difficulty"]
+    team_dict[team_a].fixture_strengths[gameweek-1] = fixture["team_a_difficulty"]
+
+# get player results data
 for player_id, player_obj in player_dict.items():
     url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
     player_detail_data = requests.get(url).json()
@@ -69,19 +82,8 @@ for player_id, player_obj in player_dict.items():
         pf.xa = gw_data.get("expected_assists")
         pf.xgc = gw_data.get("expected_goals_conceded")
         
-        opponent_team_id = gw_data.get("opponent_team")                # change team so it shows its strength per results?-----------------------------------
-        if opponent_team_id in team_dict:
-                pf.opponent_strength = team_dict[opponent_team_id].strength
-
-
-
-
-url = "https://fantasy.premierleague.com/api/fixtures/"
-data = requests.get(url).json()
-
-fixtures = pd.DataFrame(data)
-for _, fixture in fixtures.iterrows():                    ##----use this api to get teams strenght per results?-------------------------------
-    pass
+        opponent_team_id = gw_data.get("opponent_team")            
+        pf.opponent_strength = player_obj.team.fixture_strengths[gameweek-1]
 
 
 # --- PRINT PLAYERS ---
