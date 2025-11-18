@@ -1,5 +1,8 @@
 import pandas as pd
 import requests
+import os
+import time
+import json
 from models.team import Team
 from models.goalkeeper import Goalkeeper
 from models.defender import Defender
@@ -55,35 +58,56 @@ for _, fixture in fixtures.iterrows():
     team_dict[team_h].fixture_strengths[gameweek-1] = fixture["team_h_difficulty"]
     team_dict[team_a].fixture_strengths[gameweek-1] = fixture["team_a_difficulty"]
 
+
+cache_folder = "player_cache"
+if not os.path.exists(cache_folder):
+    os.makedirs(cache_folder)
+
 # get player results data
 for player_id, player_obj in player_dict.items():
-    url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
-    player_detail_data = requests.get(url).json()
-    
-    for gw_data in player_detail_data["history"]:
-        gameweek = gw_data["round"]
-    
-        pf = player_obj.results[gameweek - 1]
+
+    # file to store data for testing to minimize api requests
+    cache_file = os.path.join(cache_folder, f"player_{player_id}.json")
+    player_detail_data = None
+
+    # check if player data exists in local cache,  if not then make api request and add it
+    if os.path.exists(cache_file):
         
-        pf.pts = gw_data.get("total_points")
-        pf.minutes = gw_data.get("minutes")
-        pf.goals = gw_data.get("goals_scored")
-        pf.assists = gw_data.get("assists")
-        pf.clean_sheets = gw_data.get("clean_sheets")
-        pf.goals_conceded = gw_data.get("goals_conceded")
-        pf.yellow = gw_data.get("yellow_cards")
-        pf.red = gw_data.get("red_cards")
-        pf.bonus = gw_data.get("bonus")
-        pf.bps = gw_data.get("bps")
-        pf.dc = gw_data.get("defensive_contribution")
-        pf.pm = gw_data.get("penalties_missed")
-        pf.ps = gw_data.get("penalties_saved")
-        pf.xg = gw_data.get("expected_goals")
-        pf.xa = gw_data.get("expected_assists")
-        pf.xgc = gw_data.get("expected_goals_conceded")
+        with open(cache_file, "r") as f:
+            player_detail_data = json.load(f)
+    else:
+        url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
+        response = requests.get(url)
+            
+        player_detail_data = response.json()
         
-        opponent_team_id = gw_data.get("opponent_team")            
-        pf.opponent_strength = player_obj.team.fixture_strengths[gameweek-1]
+        with open(cache_file, "w") as f:
+            json.dump(player_detail_data, f)
+
+        time.sleep(0.1) # delay request for api limits and to prevent 429 error
+            
+    if player_detail_data:
+        for gw_data in player_detail_data["history"]:
+            gameweek = gw_data["round"]
+
+            pf = player_obj.results[gameweek - 1]
+            pf.pts = gw_data.get("total_points")
+            pf.minutes = gw_data.get("minutes")
+            pf.goals = gw_data.get("goals_scored")
+            pf.assists = gw_data.get("assists")
+            pf.clean_sheets = gw_data.get("clean_sheets")
+            pf.goals_conceded = gw_data.get("goals_conceded")
+            pf.yellow = gw_data.get("yellow_cards")
+            pf.red = gw_data.get("red_cards")
+            pf.bonus = gw_data.get("bonus")
+            pf.bps = gw_data.get("bps")
+            pf.dc = gw_data.get("defensive_contribution")
+            pf.pm = gw_data.get("penalties_missed")
+            pf.ps = gw_data.get("penalties_saved")
+            pf.xg = gw_data.get("expected_goals")
+            pf.xa = gw_data.get("expected_assists")
+            pf.xgc = gw_data.get("expected_goals_conceded")
+            pf.opponent_strength = player_obj.team.fixture_strengths[gameweek-1]
 
 
 # --- PRINT PLAYERS ---
