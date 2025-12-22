@@ -23,7 +23,7 @@ class Player:
         self.own_goals = player.get("own_goals", 0)
         self.selected_by_percent = player.get("selected_by_percent", 0)
         self.chance_of_playing_this_round = player["chance_of_playing_this_round"] if season == "current" else None
-        self.results = [PlayerFixture(position=self.position) for _ in range(36)]
+        self.results = []
         self.fixtures = self.find_fixtures() if season == "current" else []
         self.totals_per_gw = []  
 

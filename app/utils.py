@@ -3,6 +3,7 @@ import requests
 import os
 import time
 import json
+from models.playerfixture import PlayerFixture
 from models.team import Team
 from models.goalkeeper import Goalkeeper
 from models.defender import Defender
@@ -11,6 +12,7 @@ from models.forward import Forward
 
 REFRESH_CACHE = False 
 
+# player cache path setup 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
 cache_folder = os.path.join(root_dir, "player_cache")
@@ -19,6 +21,7 @@ if not os.path.exists(cache_folder):
     os.makedirs(cache_folder)
 
 
+# fetch current gw
 url = "https://fantasy.premierleague.com/api/bootstrap-static/"
 data = requests.get(url).json()
 
@@ -30,13 +33,15 @@ for event in data["events"]:
 
 print(f"Current Gameweek is: {current_gw}")  
 
+
+# fetch teams
 teams = pd.DataFrame(data['teams'])
 team_dict = {}
 for _, team in teams.iterrows():
     id = team["id"]
     team_dict[id] = Team(team)
 
-# get players
+# fetch players
 players = pd.DataFrame(data['elements'])
 player_dict = {}
 for _, player in players.iterrows():
@@ -52,24 +57,23 @@ for _, player in players.iterrows():
     elif position == 4:
         player_dict[id] = Forward(player, team, position, season="current")
 
-# get teams strength per result
+
+# fetch team strengths per fixture
 url = "https://fantasy.premierleague.com/api/fixtures/"
 data = requests.get(url).json()
 
+fixture_dict = {} 
 fixtures = pd.DataFrame(data)
-for _, fixture in fixtures.iterrows():                   
-    gameweek = fixture["event"]
 
-    if gameweek is None:
-        continue
-
-    team_h = fixture["team_h"]
-    team_a = fixture["team_a"]
-    team_dict[team_h].fixture_strengths[gameweek-1] = fixture["team_h_difficulty"]
-    team_dict[team_a].fixture_strengths[gameweek-1] = fixture["team_a_difficulty"]
+for _, fixture in fixtures.iterrows():
+    fid = fixture["id"]
+    fixture_dict[fid] = {
+        "h_diff": fixture["team_h_difficulty"],
+        "a_diff": fixture["team_a_difficulty"]
+    }
 
 
-# get player results data
+# fetch player results data
 for player_id, player_obj in player_dict.items():
 
     # file to store data for testing to minimize api requests
@@ -93,9 +97,17 @@ for player_id, player_obj in player_dict.items():
             
     if player_detail_data:
         for gw_data in player_detail_data["history"]:
-            gameweek = gw_data["round"]
 
-            pf = player_obj.results[gameweek - 1]
+            pf = PlayerFixture(position=player_obj.position)
+
+            fid = gw_data["fixture"]
+            was_home = gw_data["was_home"]
+            if was_home:
+                pf.opponent_strength = fixture_dict[fid]["h_diff"]
+            else:
+                pf.opponent_strength = fixture_dict[fid]["a_diff"]
+            
+            pf.gw = gw_data.get("round")
             pf.pts = gw_data.get("total_points")
             pf.minutes = gw_data.get("minutes")
             pf.goals = gw_data.get("goals_scored")
@@ -112,21 +124,28 @@ for player_id, player_obj in player_dict.items():
             pf.xg = gw_data.get("expected_goals")
             pf.xa = gw_data.get("expected_assists")
             pf.xgc = gw_data.get("expected_goals_conceded")
-            pf.opponent_strength = player_obj.team.fixture_strengths[gameweek-1]
+
+
+            player_obj.results.append(pf)
 
 
 # --- PRINT PLAYERS ---
-print("\n==== PLAYERS ====")
+print("\n--- PLAYERS ---")
 for i, player in enumerate(player_dict.values()):
-    if i < 5: # limit to first 5 players for 
+    if i < 5: # limit to 5 players
         print(f"\nPlayer: {player.first_name} {player.second_name} ({player.team.name})")
-        # show stats for the last gameweek they played in
-        for gw in range(current_gw, 0, -1):
-            if player.results[gw-1].minutes > 0:
-                print(f"  -> Last Played GW{gw}: Mins={player.results[gw-1].minutes}, Goals={player.results[gw-1].goals}, CS={player.results[gw-1].clean_sheets}")
-                break
+        
+        # filter games to see if played or not
+        last_active_match = None
+        games_played = [m for m in player.results if m.minutes > 0]
+        
+        if games_played:
+            last_active_match = games_played[-1]
+            print(f"---> Last Played (GW{last_active_match.gw}): Mins={last_active_match.minutes}, Goals={last_active_match.goals}, CS={last_active_match.clean_sheets}")
+        else:
+            print(f"---> No Games Played")
     
 # --- PRINT ALL TEAMS ---
-print("==== TEAMS ====")
+print("--- TEAMS ---")
 for team in team_dict.values():
     print(team)
