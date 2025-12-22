@@ -9,6 +9,16 @@ from models.defender import Defender
 from models.midfielder import Midfielder
 from models.forward import Forward
 
+REFRESH_CACHE = False 
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(script_dir)
+cache_folder = os.path.join(root_dir, "player_cache")
+
+if not os.path.exists(cache_folder):
+    os.makedirs(cache_folder)
+
+
 url = "https://fantasy.premierleague.com/api/bootstrap-static/"
 data = requests.get(url).json()
 
@@ -59,10 +69,6 @@ for _, fixture in fixtures.iterrows():
     team_dict[team_a].fixture_strengths[gameweek-1] = fixture["team_a_difficulty"]
 
 
-cache_folder = "player_cache"
-if not os.path.exists(cache_folder):
-    os.makedirs(cache_folder)
-
 # get player results data
 for player_id, player_obj in player_dict.items():
 
@@ -70,9 +76,8 @@ for player_id, player_obj in player_dict.items():
     cache_file = os.path.join(cache_folder, f"player_{player_id}.json")
     player_detail_data = None
 
-    # check if player data exists in local cache,  if not then make api request and add it
-    if os.path.exists(cache_file):
-        
+    # check if player data exists in local cache,  if not then make api request and add it,     REFRESH_CACHE updates cache isntead
+    if not REFRESH_CACHE and os.path.exists(cache_file):
         with open(cache_file, "r") as f:
             player_detail_data = json.load(f)
     else:
@@ -122,6 +127,6 @@ for i, player in enumerate(player_dict.values()):
                 break
     
 # --- PRINT ALL TEAMS ---
-# print("==== TEAMS ====")
-# for team in team_dict.values():
-#     print(team)
+print("==== TEAMS ====")
+for team in team_dict.values():
+    print(team)
