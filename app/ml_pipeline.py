@@ -88,17 +88,7 @@
 
 
 import pandas as pd
-player_dict = {}
 
-
-url = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2024-25/player_idlist.csv"
-df = pd.read_csv(url)
-for _, player in df.iterrows():
-    url = f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2024-25/players/{player["first_name"]}_{player["second_name"]}_{player["id"]}/gws.csv"
-    player_df = pd.read_csv(url)
-    for gw in range(6,33,1):
-        pass
-        #to be finished
     
 
 
