@@ -1,9 +1,8 @@
 import os
 import requests
 
-seasons = [
-    "2021-22",
-    "2022-23",
+seasons = [ 
+    "2022-23", # start with 22-23 as this is the first season expected assists and expected goals were tracked
     "2023-24",
     "2024-25"
 ]
