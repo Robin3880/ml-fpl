@@ -1,97 +1,44 @@
-# stats I want to use with model (start with forward)
-# xg              based of goals
-    #(total_goals / total_minutes) * 90
-    #total assists   ^
-    #total ppg
-    #total minutes
-    #total bps
-    #total xg     ^
-    #total xa    ^
-    #for each last 5 results:
-        #team_strenght
-        #result.goals 
-        #result.assists 
-        #result.bp 
-        #result.bps 
-        #result.opponent_strenght
-
-# xa               based off assists
-    #(total_goals / total_minutes) * 90
-    #total assists  ^
-
-    #total ppg
-    #total minutes
-    #total bps
-    #total xg    ^
-    #total xa    ^
-    #for each last 5 results:
-        #team_strenght
-        #result.goals 
-        #result.assists 
-        #result.bp 
-        #result.bps 
-        #result.opponent_strenght
-
-# xpenalites missed           based of penalties missed
-    #total penalties missed
-    #minutes
-    #for each last 5 results:
-        #team_strenght
-        #result.penalties missed
-        #result.bps 
-        #result.opponent_strenght
-
-# xyellowcard         based of yellow card
-    #total red cards
-    #total yellow cards
-    #minutes
-    #for each last 5 results:
-        #result.yell
-        #result.red
-        #result.bps 
-        #result.opponent_strenght
-        #team_strenght
-
-# xredcard     based of red card
-    #total red cards
-    #total yellow cards
-    #minutes
-    #for each last 5 results:
-        #result.yell
-        #result.red
-        #result.bps 
-        #result.opponent
-        #team_strenght
-
-# xbp   - based of bp
-    #total goals
-    #total assists
-    #team
-    #total ppg
-    #total minutes
-    #total bps
-    #total xg
-    #total xa
-    #for each last 5 results:
-        #result.goals 
-        #result.assists 
-        #result.bp 
-        #result.bps 
-        #result.opponent
-        #result.yell
-        #result.red
-        #result.penalties missed
-
-
-#take into account player availablity at end and add flag to player  (dont change xp)
-#remember to add penalties saved for gk,              dc, cs, etc
-
-
 import pandas as pd
+import os
+import numpy as np
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(script_dir)
+data_dir = os.path.join(root_dir, "data", "historical_player_data")
+fixtures_dir = os.path.join(root_dir, "data", "historical_fixture_data")
+
+
+# add past seasons data to one dataframe
+df = pd.DataFrame()
+
+for filename in os.listdir(data_dir):
+    # get season player data df and add season id
+    file_path = os.path.join(data_dir, filename)
+    season_df = pd.read_csv(file_path, on_bad_lines='skip')
+    season_id = filename.replace(".csv", "")
+    season_df["season_id"] = season_id
+
+    # add fixture difficulty
+    file_path = os.path.join(fixtures_dir, f"{season_id}_fixtures.csv")
+    fixtures_df = pd.read_csv(file_path)
+    fixtures_df = fixtures_df[["id", "team_h_difficulty", "team_a_difficulty"]]
+
+    season_df = season_df.merge(fixtures_df, left_on='fixture', right_on='id', how='left')
+    season_df['opponent_difficulty'] = np.where(season_df['was_home'] == True, season_df['team_h_difficulty'], season_df['team_a_difficulty'])
+    season_df['team_strength'] = np.where(season_df['was_home'] == True, season_df['team_a_difficulty'], season_df['team_h_difficulty'])
+    season_df.drop(columns=['id', 'team_h_difficulty', 'team_a_difficulty'], inplace=True)
+
+    df = pd.concat([df, season_df])
+
+# clean up
+df['gameweek'] = df['GW'].fillna(df['round'])   # some seasons used round and some used GW so merge the two into one column
+df.drop(columns=['GW', 'round'], inplace=True)
+df['kickoff_time'] = pd.to_datetime(df['kickoff_time'])
+df['player_season_id'] = df['name'] + "_" + df['season_id']  # create unique player-season id for each season
     
 
+#  to add:
+#  rolling results
+#
+#
 
-
-
-    
