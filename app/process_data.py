@@ -72,5 +72,6 @@ for metric in key_metrics:
 
     df[f"last_3_{metric}"] = rolling_df.droplevel(0)   # remove multi index
 
-
+output_path = os.path.join(root_dir, "data", "training_data.csv")
+df.to_csv(output_path, index=False)
 
