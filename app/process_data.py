@@ -38,7 +38,8 @@ df["gameweek"] = df["GW"].fillna(df["round"])   # some seasons used round and so
 df.drop(columns=["GW", "round"], inplace=True)
 df["kickoff_time"] = pd.to_datetime(df["kickoff_time"])
 df["player_season_id"] = df["name"] + "_" + df["season_id"]  # create unique player-season id for each season
-    
+pos_map = {'GK': 1, 'GKP': 1, 'DEF': 2, 'MID': 3, 'FWD': 4}
+df['position_id'] = train_df['position'].map(pos_map)   # change position strings to int
 
 # get rolling totals,   last 3  and last 6
 df = df.sort_values(by=["player_season_id", "kickoff_time"])
