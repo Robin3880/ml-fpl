@@ -3,12 +3,9 @@ import requests
 import os
 import time
 import json
-from models.playerfixture import PlayerFixture
-from models.team import Team
-from models.goalkeeper import Goalkeeper
-from models.defender import Defender
-from models.midfielder import Midfielder
-from models.forward import Forward
+from classes.playerfixture import PlayerFixture
+from classes.team import Team
+from classes.player import Player
 
 REFRESH_CACHE = False 
 
@@ -49,13 +46,13 @@ for _, player in players.iterrows():
     position = player["element_type"]
     id = player["id"]
     if position == 1:
-        player_dict[id] = Goalkeeper(player, team, position, season="current")
+        player_dict[id] = Player(player, team, position)
     elif position == 2:
-        player_dict[id] = Defender(player, team, position, season="current")
+        player_dict[id] = Player(player, team, position)
     elif position == 3:
-        player_dict[id] = Midfielder(player, team, position, season="current")
+        player_dict[id] = Player(player, team, position)
     elif position == 4:
-        player_dict[id] = Forward(player, team, position, season="current")
+        player_dict[id] = Player(player, team, position)
 
 
 # fetch team strengths per fixture

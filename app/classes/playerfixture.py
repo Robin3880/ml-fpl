@@ -1,5 +1,3 @@
-from .team import Team
-
 class PlayerFixture():
     def __init__(self, position=None, gw=0, pts=0,  minutes=0, goals=0, assists=0, cs=0, gc=0, yellow=0, red=0, bonus=0, bps=0, dc=0, pm=0, ps=0, xg=0, xa=0, xgc=0, opponent_strength=0):
         self.position = position
