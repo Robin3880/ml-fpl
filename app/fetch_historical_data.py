@@ -40,7 +40,6 @@ for season in seasons:
     with open(fixtures_path, "w", encoding="utf-8") as f:
         f.write(fixtures_response.text)
 
-
 # the vaastav github repo does not have defensive CBIT stats which are needed for the new 25/26 defcon points rules so will fetch this from a different github repo
 # (defenders with with at least 10 CBIT get 2 extra points,  midfielders with at least 12 CBIRT get 2 extra points)            
 # CBIT - clearances blocks interecpetions tackles
@@ -60,7 +59,7 @@ for season in seasons:
     response = requests.get(url)
     players_df = pd.read_csv(io.StringIO(response.text))  # io.StringIO allows pandas to immediatley read the text without saving to file first
 
-    players_df = players_df[["player_id", "team_code"]]
+    players_df = players_df[["player_id", "team_code", "position"]]
 
     # get player match stats and add team code onto it
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/playermatchstats/playermatchstats.csv"
