@@ -44,17 +44,21 @@ for season in seasons:
 # CBIT - clearances blocks interecpetions tackles
 # CBIRT - clearances blocks interceptions recoveries tackles
 
-# data only avaialable for 2024-2025 season,    will use this to train a seperate defensive contribution pts predictor model
-defensive_dir = os.path.join(root_dir, "data")
+# data only avaialable for 2024-2025 season onwards,    will use this to train a seperate defensive contribution pts predictor model
+seasons = [
+    "2024-2025"
+]
+defensive_dir = os.path.join(root_dir, "data", "historical_defensive_data")
 if not os.path.exists(defensive_dir):
     os.makedirs(defensive_dir)
 
-url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/2024-2025/playermatchstats/playermatchstats.csv"
+for season in seasons:
+    url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/playermatchstats/playermatchstats.csv"
 
-season_path = os.path.join(defensive_dir, f"2024-2025_defensive.csv")
+    season_path = os.path.join(defensive_dir, f"{season}_defensive.csv")
 
-response = requests.get(url)
-with open(season_path, "w", encoding="utf-8") as f:
-    f.write(response.text)
+    response = requests.get(url)
+    with open(season_path, "w", encoding="utf-8") as f:
+        f.write(response.text)
 
 
