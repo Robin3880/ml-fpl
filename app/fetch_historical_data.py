@@ -15,7 +15,7 @@ root_dir = os.path.dirname(script_dir)
 data_dir = os.path.join(root_dir, "data", "historical_player_data")
 fixtures_dir = os.path.join(root_dir, "data", "historical_fixture_data")
 
-if not os.path.exists(data_dir):
+if not os.path.exists(data_dir):  
     os.makedirs(data_dir)
 if not os.path.exists(fixtures_dir):
     os.makedirs(fixtures_dir)
@@ -55,23 +55,14 @@ if not os.path.exists(defensive_dir):
     os.makedirs(defensive_dir)
 
 for season in seasons:
-    # first get player df with team ids as we will need this to know if they are home or away later
+    # first get player df with team codes as we will need this to know if they are home or away later
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/players/players.csv"
     response = requests.get(url)
     players_df = pd.read_csv(io.StringIO(response.text))  # io.StringIO allows pandas to immediatley read the text without saving to file first
 
     players_df = players_df[["player_id", "team_code"]]
 
-    url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/teams/teams.csv"
-    response = requests.get(url)
-    teams_df = pd.read_csv(io.StringIO(response.text))
-    teams_df = teams_df[["code", "id"]]
-
-    players_df = players_df.merge(teams_df, left_on="team_code", right_on="code", how="left")
-    players_df.rename(columns={"id" : "team_id"}, inplace=True)
-    players_df.drop(columns={"team_code", "code"}, inplace=True)
-
-    # get player match stats and add team id onto it
+    # get player match stats and add team code onto it
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/playermatchstats/playermatchstats.csv"
 
     response = requests.get(url)
