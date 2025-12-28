@@ -96,7 +96,7 @@ for filename in os.listdir(defensive_data):
 
     season_df = season_df.merge(fixtures_df, left_on="match_id", right_on="match_id", how="left")
 
-    season_df["was_home"] = np.where(season_df["home_team"] == season_df["team_code"], True, False)
+    season_df["was_home"] = np.where(season_df["home_team"] == season_df["team_code"], 1, 0)
 
     season_df["opponent_difficulty"] = np.where(season_df["was_home"] == True, season_df["away_team_elo"], season_df["home_team_elo"])
     season_df["team_strength"] = np.where(season_df["was_home"] == True, season_df["home_team_elo"], season_df["away_team_elo"])
