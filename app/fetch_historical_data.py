@@ -1,5 +1,7 @@
 import os
+import io
 import requests
+import pandas as pd
 
 seasons = [ 
     "2022-23", # start with 22-23 as this is the first season expected assists and expected goals were tracked
@@ -53,12 +55,33 @@ if not os.path.exists(defensive_dir):
     os.makedirs(defensive_dir)
 
 for season in seasons:
+    # first get player df with team ids as we will need this to know if they are home or away later
+    url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/players/players.csv"
+    response = requests.get(url)
+    players_df = pd.read_csv(io.StringIO(response.text))  # io.StringIO allows pandas to immediatley read the text without saving to file first
+
+    players_df = players_df[["player_id", "team_code"]]
+
+    url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/teams/teams.csv"
+    response = requests.get(url)
+    teams_df = pd.read_csv(io.StringIO(response.text))
+    teams_df = teams_df[["code", "id"]]
+
+    players_df = players_df.merge(teams_df, left_on="team_code", right_on="code", how="left")
+    players_df.rename(columns={"id" : "team_id"}, inplace=True)
+    players_df.drop(columns={"team_code", "code"}, inplace=True)
+
+    # get player match stats and add team id onto it
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{season}/playermatchstats/playermatchstats.csv"
 
-    season_path = os.path.join(defensive_dir, f"{season}_defensive.csv")
-
     response = requests.get(url)
-    with open(season_path, "w", encoding="utf-8") as f:
-        f.write(response.text)
+
+    stats_df = pd.read_csv(io.StringIO(response.text))
+    stats_df = stats_df.merge(players_df, left_on="player_id", right_on="player_id", how="left")
+
+    season_path = os.path.join(defensive_dir, f"{season}_defensive.csv")
+    stats_df.to_csv(season_path, index=False)
+
+    
 
 
