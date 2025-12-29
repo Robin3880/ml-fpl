@@ -6,8 +6,11 @@ import json
 from classes.playerfixture import PlayerFixture
 from classes.team import Team
 from classes.player import Player
+import pickle
+import io
 
 REFRESH_CACHE = False 
+SEASON = "2025-2026"
 
 # player cache path setup 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,9 +33,10 @@ for event in data["events"]:
 
 print(f"Current Gameweek is: {current_gw}")  
 
-
-# fetch teams
-teams = pd.DataFrame(data['teams'])
+# fetch teams from fpl core insights github repo,   as the defcon predictor model uses the elo which is in this
+url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{SEASON}/teams.csv"
+response = requests.get(url)
+teams = pd.read_csv(io.StringIO(response.text))
 team_dict = {}
 for _, team in teams.iterrows():
     id = team["id"]
@@ -66,9 +70,10 @@ for _, fixture in fixtures.iterrows():
     fid = fixture["id"]
     fixture_dict[fid] = {
         "h_diff": fixture["team_h_difficulty"],
-        "a_diff": fixture["team_a_difficulty"]
+        "a_diff": fixture["team_a_difficulty"],
+        "team_a": fixture["team_a"],
+        "team_h": fixture["team_h"]
     }
-
 
 # fetch player results data
 for player_id, player_obj in player_dict.items():
@@ -101,10 +106,13 @@ for player_id, player_obj in player_dict.items():
             was_home = gw_data["was_home"]
             if was_home:
                 pf.opponent_strength = fixture_dict[fid]["h_diff"]
+                pf.team_strength = fixture_dict[fid]["a_diff"]
+                pf.opponent = team_dict[fixture_dict[fid]["team_a"]]
             else:
                 pf.opponent_strength = fixture_dict[fid]["a_diff"]
-            
-            pf.gw = gw_data.get("round")
+                pf.team_strength = fixture_dict[fid]["h_diff"]
+                pf.opponent = team_dict[fixture_dict[fid]["team_h"]]
+
             pf.pts = gw_data.get("total_points")
             pf.minutes = gw_data.get("minutes")
             pf.goals = gw_data.get("goals_scored")
