@@ -57,16 +57,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # use BayesSearchCV to find best hyper parameters for the model
 search_space     = {
-    'max_depth': Integer(3, 10),                     
-    'learning_rate': Real(0.01, 1, 'log-uniform'), 
-    'subsample': Real(0.5, 1.0),                   
-    'colsample_bytree': Real(0.5, 1.0),          
-    'colsample_bylevel': Real(0.5, 1.0),           
-    'colsample_bynode': Real(0.5, 1.0),              
-    'reg_alpha': Real(1e-9, 100, 'log-uniform'),     
-    'reg_lambda': Real(1e-9, 100, 'log-uniform'),  
-    'n_estimators': Integer(50, 5000),              
-    'min_child_weight': Integer(1, 10),             
+    "max_depth": Integer(3, 10),                     
+    "learning_rate": Real(0.01, 1, "log-uniform"), 
+    "subsample": Real(0.5, 1.0),                   
+    "colsample_bytree": Real(0.5, 1.0),          
+    "colsample_bylevel": Real(0.5, 1.0),           
+    "colsample_bynode": Real(0.5, 1.0),              
+    "reg_alpha": Real(1e-9, 100, "log-uniform"),     
+    "reg_lambda": Real(1e-9, 100, "log-uniform"),  
+    "n_estimators": Integer(50, 5000),              
+    "min_child_weight": Integer(1, 10),             
 }
 
 xgb_reg = xgb.XGBRegressor(random_state=8, n_jobs=1) 
@@ -75,7 +75,7 @@ opt = BayesSearchCV(
     xgb_reg,
     search_space, cv=5,
     n_iter=50,
-    scoring='neg_mean_absolute_error',
+    scoring="neg_mean_absolute_error",
     random_state=8,
     n_jobs=-1
 ) 
