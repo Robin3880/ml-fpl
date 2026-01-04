@@ -13,28 +13,6 @@ data_path = os.path.join(script_dir, "..", "data", "defensive_training_data.csv"
 training_df = pd.read_csv(data_path)
 training_df = training_df[training_df["minutes_played"] > 0].copy()
 
-metrics = [
-    "cbit",
-    "cbirt",
-    "clearances",
-    "blocks",
-    "interceptions",
-    "tackles",
-    "recoveries",         
-    "minutes_played",   
-    "tackles_won",       
-    "headed_clearances", 
-    "duels_won",          
-    "duels_lost",        
-    "ground_duels_won",  
-    "aerial_duels_won",   
-    "fouls_committed",   
-    "sweeper_actions",    
-    "goals_conceded",
-    "team_goals_conceded"
-]
-
-
 # prepare data/features and split using scikitlearn
 features = [
     "opponent_difficulty",
