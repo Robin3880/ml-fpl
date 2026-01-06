@@ -62,7 +62,7 @@ code_to_id_dict = dict(zip(teams_df["code"], teams_df["id"]))
 stats_dict = {} # player stats
 match_data_dict = {} # scores and elo etc
 
-for gw in range(1, current_gw + 1):
+for gw in range(1, current_gw):
     # 1. Get Matches for this GW
     response = requests.get(f"{github_url}/By Gameweek/GW{gw}/matches.csv")    
     matches_df = pd.read_csv(io.StringIO(response.text))
