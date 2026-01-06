@@ -11,16 +11,15 @@ class Player:
         self.team = team
         self.selected_by_percent = player.get("selected_by_percent", 0)   
         self.chance_of_playing_this_round = player["chance_of_playing_this_round"] 
-        self.results = []
-        self.fixtures = self.find_fixtures() 
+
+        self.fixtures = []
+        self.last_6 = []
+        self.last_3 = []
+        self.last_6_def = []
+        self.last_3_def = []
 
     def __str__(self):
         return f"{self.id},{self.first_name},{self.team.name},{self.results}"
 
-    def calculate_rolling(self):
-        pass
-
-    def find_fixtures(self):
-        pass
 
     
