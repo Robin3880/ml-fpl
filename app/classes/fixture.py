@@ -5,3 +5,6 @@ class Fixture:
         self.team_elo = team_elo
         self.opponent_elo = opponent_elo
         self.was_home = was_home
+
+    def __str__(self):
+        return f"{self.team_strength}, {self.opponent_strength}, {self.team_elo}, {self.opponent_elo}, {self.was_home}"
