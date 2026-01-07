@@ -140,15 +140,18 @@ with open("models/fpl_defcon_xgboost.pkl", "rb") as f:
     defcon_model = pickle.load(f)
 
 # for each player"s fixture predict base points
-    for p_id in player_dict_by_team[1]:
-        player = player_dict_by_team[1][p_id]
+for team_id in player_dict_by_team:
+    for p_id in player_dict_by_team[team_id]:
+        player = player_dict_by_team[team_id][p_id]
         stat_row = df[df["player_id"] == p_id]
 
-        player.last_6 = {m: float(stat_row[f"last_6_{m}"].iloc[0]) for m in last_6_metrics}
-        player.last_3 = {m: float(stat_row[f"last_3_{m}"].iloc[0]) for m in last_3_metrics}
-
-        player.predict_points(base_model)
-
+        if not stat_row.empty:
+            player.last_6 = {m: float(stat_row[f"last_6_{m}"].iloc[0]) for m in last_6_metrics}
+            player.last_3 = {m: float(stat_row[f"last_3_{m}"].iloc[0]) for m in last_3_metrics}
+        else:
+            # new player with no stats
+            player.last_6 = {m: 0.0 for m in last_6_metrics}
+            player.last_3 = {m: 0.0 for m in last_3_metrics}
 
 
 
