@@ -1,25 +1,89 @@
-from .team import Team
-
 class Player:
-    def __init__(self, player: dict, team: Team, position: str):
+    def __init__(self, player: dict):
         self.value = player.get("now_cost", 0) 
         self.id = player["id"]
         self.position = player["element_type"]
         self.first_name = player["first_name"]
         self.second_name = player["second_name"]
         self.web_name = player["web_name"]
-        self.team = team
         self.selected_by_percent = player.get("selected_by_percent", 0)   
         self.chance_of_playing_this_round = player["chance_of_playing_this_round"] 
-
-        self.fixtures = []
-        self.last_6 = []
-        self.last_3 = []
-        self.last_6_def = []
-        self.last_3_def = []
+        self.fixtures = [[],[],[],[],[]]
+        self.gw_xp = [0] * 5
+        self.last_6 = {}
+        self.last_3 = {}
 
     def __str__(self):
-        return f"{self.id},{self.first_name},{self.team.name},{self.results}"
+        return f"{self.id}, {self.first_name}, {self.web_name}, {self.position}"
+    
+    def predict_points(self, model):
+        for i, gw in enumerate(self.fixtures):
+            for fixture in gw:
+                features = [
+                    fixture.opponent_strength,
+                    fixture.team_strength,
+                    fixture.was_home,
+                    self.position,
+                    self.last_6["minutes"], 
+                    self.last_6["total_points"], 
+                    self.last_6["expected_goals"], 
+                    self.last_6["expected_assists"], 
+                    self.last_6["expected_goals_conceded"],
+                    self.last_6["goals_scored"], 
+                    self.last_6["assists"], 
+                    self.last_6["clean_sheets"], 
+                    self.last_6["goals_conceded"],
+                    self.last_6["own_goals"], 
+                    self.last_6["penalties_saved"], 
+                    self.last_6["penalties_missed"],
+                    self.last_6["yellow_cards"], 
+                    self.last_6["red_cards"], 
+                    self.last_6["saves"], 
+                    self.last_6["bonus"], 
+                    self.last_6["bps"], 
+                    self.last_6["influence"], 
+                    self.last_6["creativity"], 
+                    self.last_6["threat"], 
+                    self.last_6["ict_index"],
+                    self.last_3["minutes"], 
+                    self.last_3["total_points"], 
+                    self.last_3["expected_goals"], 
+                    self.last_3["expected_assists"], 
+                    self.last_3["saves"], 
+                    self.last_3["bps"]
+                ]
+                prediction = model.predict([features])[0]
+                self.gw_xp[i] += prediction * self.get_start_probability()
+
+    def predict_defcons(self, model):
+        pass
+    
+    def get_start_probability(self):
+        recent_avg_mins = self.last_3["minutes"] 
+        
+        if self.chance_of_playing_this_round == 0:
+            return 0.05 # injured, most likely wont play at all
+        
+        if recent_avg_mins >= 80 or (self.last_6["minutes"]>20 and self.chance_of_playing_this_round == 100):
+            return 1  # regular starter,  or regular starter who has returned from injury
+        elif recent_avg_mins >= 20 and self.chance_of_playing_this_round == 75:
+            return 0.8  # regular starter who has slight injury so might come off bench instead of starting
+        elif self.last_6["minutes"] >= 45:  
+            return 0.75   # non fixed starter
+        elif recent_avg_mins > 20:
+            return 0.60  # regular sub
+        else:
+            return 0.05
+
+    def calculate_total_points(self, xp, xdc):
+        """
+        helper method to calculate final xp taking into account everything
+        
+        :param self: this player
+        :param xp: expected base points
+        :param xdc: expected defensive contributions
+        """
+        pass
 
 
     

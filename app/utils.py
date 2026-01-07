@@ -1,25 +1,17 @@
 import pandas as pd
 import requests
 import os
-import time
-import json
-from classes.playerfixture import PlayerFixture
-from classes.team import Team
+from classes.fixture import Fixture
 from classes.player import Player
 import pickle
 import io
 
-REFRESH_CACHE = False 
 SEASON = "2025-2026"
 
-# player cache path setup 
+# cache path setup 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
-cache_folder = os.path.join(root_dir, "player_cache")
-
-if not os.path.exists(cache_folder):
-    os.makedirs(cache_folder)
-
+data_folder = os.path.join(root_dir, "data")
 
 # fetch current gw
 url = "https://fantasy.premierleague.com/api/bootstrap-static/"
@@ -31,126 +23,136 @@ for event in data["events"]:
         current_gw = event["id"]
         break
 
-print(f"Current Gameweek is: {current_gw}")  
-
-# fetch teams from fpl core insights github repo,   as the defcon predictor model uses the elo which is in this
-url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/{SEASON}/teams.csv"
+# make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
+current_team_elos = {}
+url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/2025-2026/By Gameweek/GW{current_gw}/teams.csv"
 response = requests.get(url)
-teams = pd.read_csv(io.StringIO(response.text))
-team_dict = {}
-for _, team in teams.iterrows():
-    id = team["id"]
-    team_dict[id] = Team(team)
+df = pd.read_csv(io.StringIO(response.text))
+current_team_elos = dict(zip(df["id"], df["elo"]))
+player_dict_by_team = {team_id: {} for team_id in df["id"]}
 
-# fetch players
-players = pd.DataFrame(data['elements'])
-player_dict = {}
-for _, player in players.iterrows():
-    team = team_dict[player["team"]]
-    position = player["element_type"]
-    id = player["id"]
-    if position == 1:
-        player_dict[id] = Player(player, team, position)
-    elif position == 2:
-        player_dict[id] = Player(player, team, position)
-    elif position == 3:
-        player_dict[id] = Player(player, team, position)
-    elif position == 4:
-        player_dict[id] = Player(player, team, position)
+# for each player, create Player class instance  
+url = "https://fantasy.premierleague.com/api/bootstrap-static/"
+data = requests.get(url).json()
+for player in data["elements"]:
+    player_dict_by_team[player["team"]][player["id"]] = Player(player)
 
-
-# fetch team strengths per fixture
+# get next 5 gamweek fixtures,  for each fixture add to all players from that team
 url = "https://fantasy.premierleague.com/api/fixtures/"
 data = requests.get(url).json()
+for f in data:
+    if f["event"] and f["event"] >= current_gw and f["event"] - current_gw < 5:
+        i = f["event"] - current_gw
+        h_id = f["team_h"]
+        a_id = f["team_a"]
+        home_fixture = Fixture(f["team_a_difficulty"], f["team_h_difficulty"], current_team_elos[h_id], current_team_elos[a_id], 1)
+        away_fixture = Fixture(f["team_h_difficulty"], f["team_a_difficulty"], current_team_elos[a_id], current_team_elos[h_id], 0)
 
-fixture_dict = {} 
-fixtures = pd.DataFrame(data)
+        for player in player_dict_by_team[h_id]:
+            player_dict_by_team[h_id][player].fixtures[i].append(home_fixture)
 
-for _, fixture in fixtures.iterrows():
-    fid = fixture["id"]
-    fixture_dict[fid] = {
-        "h_diff": fixture["team_h_difficulty"],
-        "a_diff": fixture["team_a_difficulty"],
-        "team_a": fixture["team_a"],
-        "team_h": fixture["team_h"]
-    }
+        for player in player_dict_by_team[a_id]:
+            player_dict_by_team[a_id][player].fixtures[i].append(away_fixture)
 
-# fetch player results data
-for player_id, player_obj in player_dict.items():
+# load in master df,  for each player calculate rollint stats 
+player_stats = os.path.join(data_folder, f"master_{SEASON}_data.csv")
+df = pd.read_csv(player_stats)
 
-    # file to store data for testing to minimize api requests
-    cache_file = os.path.join(cache_folder, f"player_{player_id}.json")
-    player_detail_data = None
+grouped = df.groupby("player_id")
 
-    # check if player data exists in local cache,  if not then make api request and add it,     REFRESH_CACHE updates cache isntead
-    if not REFRESH_CACHE and os.path.exists(cache_file):
-        with open(cache_file, "r") as f:
-            player_detail_data = json.load(f)
-    else:
-        url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
-        response = requests.get(url)
-            
-        player_detail_data = response.json()
-        
-        with open(cache_file, "w") as f:
-            json.dump(player_detail_data, f)
+last_6_metrics = [
+    "minutes", 
+    "total_points", 
+    "expected_goals", 
+    "expected_assists", 
+    "expected_goals_conceded",
+    "goals_scored", 
+    "assists", 
+    "clean_sheets", 
+    "goals_conceded",
+    "own_goals", 
+    "penalties_saved", 
+    "penalties_missed",
+    "yellow_cards", 
+    "red_cards", 
+    "saves", 
+    "bonus", 
+    "bps",
+    "influence", 
+    "creativity", 
+    "threat", 
+    "ict_index",
+    "cbit",
+    "cbirt",
+    "clearances",
+    "blocks",
+    "interceptions",
+    "tackles",
+    "recoveries",           
+    "tackles_won",       
+    "headed_clearances", 
+    "duels_won",          
+    "duels_lost",        
+    "ground_duels_won",  
+    "aerial_duels_won",   
+    "fouls_committed",   
+    "sweeper_actions",    
+    "goals_conceded",
+    "team_goals_conceded"
+]
 
-        time.sleep(0.1) # delay request for api limits and to prevent 429 error
-            
-    if player_detail_data:
-        for gw_data in player_detail_data["history"]:
+last_3_metrics = [   
+    "minutes",         
+    "total_points",     
+    "expected_goals",  
+    "expected_assists", 
+    "saves",           
+    "bps",
+    "cbit",
+    "cbirt",
+    "clearances",
+    "blocks",
+    "interceptions",
+    "tackles",
+    "recoveries",
+]
 
-            pf = PlayerFixture(position=player_obj.position)
+# Calculate Rolling 6
+for metric in last_6_metrics:
+    df[f"last_6_{metric}"] = df.groupby("player_id")[metric].transform(
+        lambda x: x.rolling(window=6, min_periods=1).mean()
+    )
 
-            fid = gw_data["fixture"]
-            was_home = gw_data["was_home"]
-            if was_home:
-                pf.opponent_strength = fixture_dict[fid]["h_diff"]
-                pf.team_strength = fixture_dict[fid]["a_diff"]
-                pf.opponent = team_dict[fixture_dict[fid]["team_a"]]
-            else:
-                pf.opponent_strength = fixture_dict[fid]["a_diff"]
-                pf.team_strength = fixture_dict[fid]["h_diff"]
-                pf.opponent = team_dict[fixture_dict[fid]["team_h"]]
+# Calculate Rolling 3
+for metric in last_3_metrics:
+    df[f"last_3_{metric}"] = df.groupby("player_id")[metric].transform(
+        lambda x: x.rolling(window=3, min_periods=1).mean()
+    )
 
-            pf.pts = gw_data.get("total_points")
-            pf.minutes = gw_data.get("minutes")
-            pf.goals = gw_data.get("goals_scored")
-            pf.assists = gw_data.get("assists")
-            pf.clean_sheets = gw_data.get("clean_sheets")
-            pf.goals_conceded = gw_data.get("goals_conceded")
-            pf.yellow = gw_data.get("yellow_cards")
-            pf.red = gw_data.get("red_cards")
-            pf.bonus = gw_data.get("bonus")
-            pf.bps = gw_data.get("bps")
-            pf.dc = gw_data.get("defensive_contribution")
-            pf.pm = gw_data.get("penalties_missed")
-            pf.ps = gw_data.get("penalties_saved")
-            pf.xg = gw_data.get("expected_goals")
-            pf.xa = gw_data.get("expected_assists")
-            pf.xgc = gw_data.get("expected_goals_conceded")
+# reduce dataframe to only current state of player
+df = df.sort_values("gameweek").groupby("player_id").last().reset_index()
+
+# get models I created
+with open("models/fpl_xgboost.pkl", "rb") as f:
+    base_model = pickle.load(f)
+
+with open("models/fpl_defcon_xgboost.pkl", "rb") as f:
+    defcon_model = pickle.load(f)
+
+# for each player"s fixture predict base points
+    for p_id in player_dict_by_team[1]:
+        player = player_dict_by_team[1][p_id]
+        stat_row = df[df["player_id"] == p_id]
+
+        player.last_6 = {m: float(stat_row[f"last_6_{m}"].iloc[0]) for m in last_6_metrics}
+        player.last_3 = {m: float(stat_row[f"last_3_{m}"].iloc[0]) for m in last_3_metrics}
+
+        player.predict_points(base_model)
 
 
-            player_obj.results.append(pf)
 
 
-# --- PRINT PLAYERS ---
-print("\n--- PLAYERS ---")
-for i, player in enumerate(player_dict.values()):
-    if i < 5: # limit to 5 players
-        print(f"\nPlayer: {player.first_name} {player.second_name} ({player.team.name})")
-        
-        # filter games to see if played or not
-        last_active_match = None
-        games_played = [m for m in player.results if m.minutes > 0]
-        
-        if games_played:
-            last_active_match = games_played[-1]
-            print(f"---> Last Played (GW{last_active_match.gw}): Mins={last_active_match.minutes}, Goals={last_active_match.goals}, CS={last_active_match.clean_sheets}")
-        else:
-            print(f"---> No Games Played")
-    
-# --- PRINT ALL TEAMS ---
-print("--- TEAMS ---")
-for team in team_dict.values():
-    print(team)
+# for each player"s fixture predict defensive contributions
+
+
+
