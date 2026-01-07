@@ -139,7 +139,7 @@ with open("models/fpl_xgboost.pkl", "rb") as f:
 with open("models/fpl_defcon_xgboost.pkl", "rb") as f:
     defcon_model = pickle.load(f)
 
-# for each player"s fixture predict base points
+# for each player"s fixture predict points
 for team_id in player_dict_by_team:
     for p_id in player_dict_by_team[team_id]:
         player = player_dict_by_team[team_id][p_id]
@@ -153,9 +153,10 @@ for team_id in player_dict_by_team:
             player.last_6 = {m: 0.0 for m in last_6_metrics}
             player.last_3 = {m: 0.0 for m in last_3_metrics}
 
+        player.predict_points(base_model, defcon_model)
 
 
-# for each player"s fixture predict defensive contributions
+
 
 
 

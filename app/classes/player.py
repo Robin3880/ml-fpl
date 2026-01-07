@@ -1,3 +1,5 @@
+from scipy.stats import poisson
+
 class Player:
     def __init__(self, player: dict):
         self.value = player.get("now_cost", 0) 
@@ -16,9 +18,10 @@ class Player:
     def __str__(self):
         return f"{self.id}, {self.first_name}, {self.web_name}, {self.position}"
     
-    def predict_points(self, model):
+    def predict_points(self, base_model, defcon_model):
         for i, gw in enumerate(self.fixtures):
             for fixture in gw:
+                # predict base points
                 features = [
                     fixture.opponent_strength,
                     fixture.team_strength,
@@ -52,12 +55,47 @@ class Player:
                     self.last_3["saves"], 
                     self.last_3["bps"]
                 ]
-                prediction = model.predict([features])[0]
-                self.gw_xp[i] += prediction * self.get_start_probability()
+                xp = base_model.predict([features])[0]
+                
+                # predict defensive contributions
+                features = [
+                    fixture.opponent_elo,
+                    fixture.team_elo,
+                    int(fixture.was_home),
+                    self.position, 
+                    self.last_6["cbit"], 
+                    self.last_6["cbirt"],
+                    self.last_6["clearances"], 
+                    self.last_6["blocks"], 
+                    self.last_6["interceptions"], 
+                    self.last_6["tackles"], 
+                    self.last_6["recoveries"],
+                    self.last_6["minutes"], 
+                    self.last_6["tackles_won"], 
+                    self.last_6["headed_clearances"],
+                    self.last_6["duels_won"], 
+                    self.last_6["duels_lost"], 
+                    self.last_6["ground_duels_won"], 
+                    self.last_6["aerial_duels_won"], 
+                    self.last_6["fouls_committed"], 
+                    self.last_6["sweeper_actions"],
+                    self.last_6["goals_conceded"], 
+                    self.last_6["team_goals_conceded"],
+                    self.last_3["cbit"],
+                    self.last_3["cbirt"],
+                    self.last_3["clearances"],
+                    self.last_3["blocks"],
+                    self.last_3["interceptions"],
+                    self.last_3["tackles"],
+                    self.last_3["recoveries"],
+                    self.last_3["minutes"] 
+                ]
+                results = defcon_model.predict([features])[0]
+                xcbit = results[0]
+                xrecoveries = results[1]
 
-    def predict_defcons(self, model):
-        pass
-    
+                self.calculate_total_points(xp, xcbit, xrecoveries, i)
+
     def get_start_probability(self):
         recent_avg_mins = self.last_3["minutes"] 
         
@@ -75,7 +113,7 @@ class Player:
         else:
             return 0.05
 
-    def calculate_total_points(self, xp, xdc):
+    def calculate_total_points(self, xp, xcbit, xrecoveries, gw):
         """
         helper method to calculate final xp taking into account everything
         
@@ -83,7 +121,15 @@ class Player:
         :param xp: expected base points
         :param xdc: expected defensive contributions
         """
-        pass
+        if self.position == 2:  # DEF
+            prob_10_cbit = poisson.sf(9, xcbit)
+            xp += prob_10_cbit*2
+        elif self.position == 3: #MID
+            prob_12_cbirt = poisson.sf(11, xcbit + xrecoveries)
+            xp += prob_12_cbirt*2
+
+        self.gw_xp[gw] += xp * self.get_start_probability()
+
 
 
     
