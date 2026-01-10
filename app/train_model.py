@@ -35,7 +35,6 @@ features = [
     "last_6_bonus", 
     "last_6_bps", 
     "last_6_influence", 
-    "last_6_creativity", 
     "last_6_threat", 
     "last_6_ict_index",
     "last_3_minutes", 

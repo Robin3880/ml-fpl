@@ -45,7 +45,6 @@ class Player:
                     self.last_6["bonus"], 
                     self.last_6["bps"], 
                     self.last_6["influence"], 
-                    self.last_6["creativity"], 
                     self.last_6["threat"], 
                     self.last_6["ict_index"],
                     self.last_3["minutes"], 
@@ -97,7 +96,7 @@ class Player:
                 self.calculate_total_points(xp, xcbit, xrecoveries, i)
 
     def get_start_probability(self):
-        recent_avg_mins = self.last_3["minutes"] 
+        recent_avg_mins = self.last_3["minutes"] / 3
         
         if self.chance_of_playing_this_round == 0:
             return 0.05 # injured, most likely wont play at all
@@ -127,8 +126,9 @@ class Player:
         elif self.position == 3: #MID
             prob_12_cbirt = poisson.sf(11, xcbit + xrecoveries)
             xp += prob_12_cbirt*2
-
+        
         self.gw_xp[gw] += xp * self.get_start_probability()
+        print(self.web_name, xp * self.get_start_probability())
 
 
 

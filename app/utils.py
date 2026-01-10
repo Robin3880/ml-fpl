@@ -22,6 +22,7 @@ for event in data["events"]:
     if event.get("is_current") is True:
         current_gw = event["id"]
         break
+print(current_gw)
 
 # make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
 current_team_elos = {}
@@ -79,7 +80,6 @@ last_6_metrics = [
     "bonus", 
     "bps",
     "influence", 
-    "creativity", 
     "threat", 
     "ict_index",
     "cbit",
@@ -120,13 +120,13 @@ last_3_metrics = [
 # Calculate Rolling 6
 for metric in last_6_metrics:
     df[f"last_6_{metric}"] = df.groupby("player_id")[metric].transform(
-        lambda x: x.rolling(window=6, min_periods=1).mean()
+        lambda x: x.rolling(window=6, min_periods=1).sum()
     )
 
 # Calculate Rolling 3
 for metric in last_3_metrics:
     df[f"last_3_{metric}"] = df.groupby("player_id")[metric].transform(
-        lambda x: x.rolling(window=3, min_periods=1).mean()
+        lambda x: x.rolling(window=3, min_periods=1).sum()
     )
 
 # reduce dataframe to only current state of player
