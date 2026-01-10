@@ -123,7 +123,7 @@ class Player:
         if self.position == 2:  # DEF
             prob_10_cbit = poisson.sf(9, xcbit)
             xp += prob_10_cbit*2
-        elif self.position == 3: #MID
+        elif self.position == 3 or self.position == 4: #MID or FWD
             prob_12_cbirt = poisson.sf(11, xcbit + xrecoveries)
             xp += prob_12_cbirt*2
         
