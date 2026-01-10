@@ -118,7 +118,9 @@ class Player:
         
         :param self: this player
         :param xp: expected base points
-        :param xdc: expected defensive contributions
+        :param xcbit: expected cbit
+        :param xrecoveries: expected recoveries
+        :param gw: current gameweek
         """
         if self.position == 2:  # DEF
             prob_10_cbit = poisson.sf(9, xcbit)
@@ -127,8 +129,22 @@ class Player:
             prob_12_cbirt = poisson.sf(11, xcbit + xrecoveries)
             xp += prob_12_cbirt*2
         
+        # add xp boosts to make it a more aggressive/ less safe model and differentiate high potential players more
+        multipliers = {1:1.2, 2:1, 3:1, 4:2.2}  
+        # boost high goal potential midfielders points more as these are worth more points thatn defcons/bp
+        if self.position == 3 and self.last_6["expected_goals"] >= 2:
+            boost = 1.1 + max(0, (self.last_6["expected_goals"] + self.last_6["expected_assists"]*(0.2) - 2.0) * 0.2)
+            multipliers[3] = min(boost, 1.8)
+        
+        # boost high clean sheet potential defenders more as this is worth 4 points and more reliable/valuable than assists or defcons
+        if self.position == 2:
+            boost = 1 + ((8 - self.last_6["expected_goals_conceded"])*0.1) 
+            multipliers[2] = max(min(boost, 1.5), 1) 
+
+        if xp > 2.5:
+            xp = 2.5 + ((xp - 2.5) * multipliers[self.position])
+
         self.gw_xp[gw] += xp * self.get_start_probability()
-        print(self.web_name, xp * self.get_start_probability())
 
 
 
