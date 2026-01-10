@@ -75,7 +75,7 @@ opt = BayesSearchCV(
     xgb_reg,
     search_space, cv=5,
     n_iter=50,
-    scoring="neg_mean_absolute_error",
+    scoring="neg_mean_squared_error",
     random_state=8,
     n_jobs=-1
 ) 
