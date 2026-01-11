@@ -5,6 +5,7 @@ from classes.fixture import Fixture
 from classes.player import Player
 import pickle
 import io
+import pulp
 
 SEASON = "2025-2026"
 
@@ -140,9 +141,11 @@ with open("models/fpl_defcon_xgboost.pkl", "rb") as f:
     defcon_model = pickle.load(f)
 
 # for each player"s fixture predict points
+player_list = []
 for team_id in player_dict_by_team:
     for p_id in player_dict_by_team[team_id]:
         player = player_dict_by_team[team_id][p_id]
+        player_list.append(player)
         stat_row = df[df["player_id"] == p_id]
 
         if not stat_row.empty:
@@ -155,8 +158,48 @@ for team_id in player_dict_by_team:
 
         player.predict_points(base_model, defcon_model)
 
+# lp algorithm using pulp to build best expected points team
+# constraints:
+# 1.  100m budget  (82m for starting 11,  18m for 4 bench players)              
+# 2.  valid formation  - 1gk,   min 3 def,  min 2 mid,   min 1 fwd                       
+# 3.  max 3 players per club
 
+my_lp_problem = pulp.LpProblem("FPL_LP_Problem", pulp.LpMaximize)
 
+ids = []
+costs = {}
+xpts = {}
+gk = {}
+defender = {}
+midfielder = {}
+forward = {}
 
+names = {p.id: p.web_name for p in player_list}
+
+for p in player_list:
+    ids.append(p.id)
+    costs[p.id] = p.value
+    xpts[p.id] = p.gw_xp[0]
+    gk[p.id] = int(p.position == 1)
+    defender[p.id] = int(p.position == 2)
+    midfielder[p.id] = int(p.position == 3)
+    forward[p.id] = int(p.position == 4)
+
+selections = pulp.LpVariable.dicts("Selected", ids, cat='Binary')
+# objective  (max xp)
+my_lp_problem += pulp.lpSum([xpts[i] * selections[i] for i in ids])  
+# contraints
+my_lp_problem += pulp.lpSum([costs[i] * selections[i] for i in ids]) <= 820   # max 82m cost
+my_lp_problem += pulp.lpSum([1 * selections[i] for i in ids]) == 11   # 11 players
+my_lp_problem += pulp.lpSum([gk[i] * selections[i] for i in ids]) == 1   #  1 gk
+my_lp_problem += pulp.lpSum([defender[i] * selections[i] for i in ids]) >= 3   # min 3 defenders
+my_lp_problem += pulp.lpSum([midfielder[i] * selections[i] for i in ids]) >= 2   # min 2 midfielders
+my_lp_problem += pulp.lpSum([forward[i] * selections[i] for i in ids]) >= 1   # min 1 forward
+
+my_lp_problem.solve(pulp.PULP_CBC_CMD(msg=False))
+
+for i in ids:
+    if selections[i].varValue == 1: # print selected players
+        print(f"{names[i]}  cost: {costs[i]}  xp: {xpts[i]}")
 
 

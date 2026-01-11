@@ -129,7 +129,7 @@ class Player:
             prob_12_cbirt = poisson.sf(11, xcbit + xrecoveries)
             xp += prob_12_cbirt*2
         
-        # add xp boosts to make it a more aggressive/ less safe model and differentiate high potential players more
+        # add xp boosts to make it a less safe model and differentiate high point potential player 
         multipliers = {1:1.2, 2:1, 3:1, 4:2.2}  
         # boost high goal potential midfielders points more as these are worth more points thatn defcons/bp
         if self.position == 3 and self.last_6["expected_goals"] >= 2:
