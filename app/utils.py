@@ -173,8 +173,8 @@ gk = {}
 defender = {}
 midfielder = {}
 forward = {}
-
-names = {p.id: p.web_name for p in player_list}
+team_map = {}
+names = {}
 
 for p in player_list:
     ids.append(p.id)
@@ -184,6 +184,11 @@ for p in player_list:
     defender[p.id] = int(p.position == 2)
     midfielder[p.id] = int(p.position == 3)
     forward[p.id] = int(p.position == 4)
+    names[p.id] = p.web_name
+    tid = p.team  
+    if tid not in team_map:
+        team_map[tid] = []
+    team_map[tid].append(p.id)
 
 selections = pulp.LpVariable.dicts("Selected", ids, cat='Binary')
 # objective  (max xp)
@@ -195,6 +200,9 @@ my_lp_problem += pulp.lpSum([gk[i] * selections[i] for i in ids]) == 1   #  1 gk
 my_lp_problem += pulp.lpSum([defender[i] * selections[i] for i in ids]) >= 3   # min 3 defenders
 my_lp_problem += pulp.lpSum([midfielder[i] * selections[i] for i in ids]) >= 2   # min 2 midfielders
 my_lp_problem += pulp.lpSum([forward[i] * selections[i] for i in ids]) >= 1   # min 1 forward
+for team_id in team_map:
+    players_in_team = team_map[team_id]
+    my_lp_problem += pulp.lpSum([selections[i] for i in players_in_team]) <= 3   # max 3 players per team
 
 my_lp_problem.solve(pulp.PULP_CBC_CMD(msg=False))
 

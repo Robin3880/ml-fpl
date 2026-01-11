@@ -4,6 +4,7 @@ class Player:
     def __init__(self, player: dict):
         self.value = player.get("now_cost", 0) 
         self.id = player["id"]
+        self.team = player["team"]
         self.position = player["element_type"]
         self.first_name = player["first_name"]
         self.second_name = player["second_name"]
