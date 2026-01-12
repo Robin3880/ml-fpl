@@ -1,5 +1,5 @@
 import pulp
-
+from ml_pipeline.predict import generate_predictions
 # lp algorithm using pulp to build best expected points team
 # constraints:
 # 1.  100m budget  (82m for starting 11,  18m for 4 bench players)              
@@ -96,3 +96,8 @@ def solve_best_team(player_list):
             selected.append((names[i], costs[i], xpts[i], "bench"))
 
     return selected
+
+
+
+for p in solve_best_team(generate_predictions()):
+    print(f"{p[0]}, {p[1]}, {p[2]}, {p[3]}")
