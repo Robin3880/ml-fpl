@@ -6,7 +6,6 @@ import io
 from backend.app.classes.player import Player 
 from backend.app.classes.fixture import Fixture
 
-
 def generate_predictions(season="2025-2026"):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.dirname(script_dir)
@@ -21,7 +20,6 @@ def generate_predictions(season="2025-2026"):
         if event.get("is_current") is True:
             current_gw = event["id"]
             break
-    print(current_gw)
 
     # make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
     current_team_elos = {}
