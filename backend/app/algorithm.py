@@ -63,7 +63,7 @@ def solve_best_team(player_list, num_of_gw):
 
     for i in ids:
         if selections[i].varValue == 1: # selected players
-            position = "def" if defender[i] else "mid" if midfielder[i] else "fwd" if forward[i] else "gk"
+            position = "DEF" if defender[i] else "MID" if midfielder[i] else "FWD" if forward[i] else "GK"
             selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "position":position, "starter":True})
             num_def += defender[i]
             num_mid += midfielder[i]
@@ -95,6 +95,6 @@ def solve_best_team(player_list, num_of_gw):
     bench_problem.solve(pulp.PULP_CBC_CMD(msg=False))
     for i in bench_ids:
         if sel_bench[i].varValue == 1: # selected players
-            position = "def" if defender[i] else "mid" if midfielder[i] else "fwd" if forward[i] else "gk"
+            position = "DEF" if defender[i] else "MID" if midfielder[i] else "FWD" if forward[i] else "GK"
             selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "position":position, "starter":False})
     return selected
