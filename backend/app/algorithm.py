@@ -81,6 +81,7 @@ def solve_best_team(player_list, num_of_gw):
     bench_problem  += pulp.lpSum([costs[i] * sel_bench[i] for i in bench_ids]) <= 1000 - total_cost   # max 100m minus best 11 cost
     bench_problem  += pulp.lpSum([1 * sel_bench[i] for i in bench_ids]) == 4   # 4 players
     bench_problem  += pulp.lpSum([gk[i] * sel_bench[i] for i in bench_ids]) == 1   #  1 gk
+    bench_problem += pulp.lpSum([costs[i] * sel_bench[i] for i in bench_ids if gk[i] == 1]) <= 45   #  bench gk not worth over 4.5m as will almost never be used compared to rest of bench
     bench_problem  += pulp.lpSum([defender[i] * sel_bench[i] for i in bench_ids]) == 5-num_def   # total 5 defenders
     bench_problem  += pulp.lpSum([midfielder[i] * sel_bench[i] for i in bench_ids]) == 5-num_mid   # total 5 midfielders
     bench_problem  += pulp.lpSum([forward[i] * sel_bench[i] for i in bench_ids]) == 3-num_fwd   # total 3 forwards
