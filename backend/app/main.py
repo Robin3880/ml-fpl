@@ -41,3 +41,28 @@ def get_best_team(num_of_gw: int = 1):
         "total_cost": sum(p["cost"] for p in result),
         "total_xp": sum(p["xpts"] for p in result)
     }
+
+@app.get("/api/player_expected_points")
+def player_expected_points(num_of_gw: int = 1):
+    if not PLAYERS:
+        raise HTTPException(status_code=503, detail="player data missing")
+    
+    if num_of_gw > 5:
+        raise HTTPException(status_code=400, detail="max gameweeks is 5") 
+
+    pos_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+    player_dicts = []
+
+    for p in PLAYERS:
+        player_dicts.append({
+            "id": p.id,
+            "name": p.web_name,
+            "position": pos_map[p.position],
+            "cost": int(p.value),
+            "xp": float(sum(p.gw_xp[0:num_of_gw])),            
+        })
+
+    # sort by xp descending
+    player_dicts.sort(key=lambda x: x["xp"], reverse=True)
+
+    return player_dicts
