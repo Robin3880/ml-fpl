@@ -6,7 +6,7 @@ from ml_pipeline.predict import generate_predictions
 # 2.  valid formation  - 1gk,   min 3 def,  min 2 mid,   min 1 fwd                       
 # 3.  max 3 players per club
 
-def solve_best_team(player_list):
+def solve_best_team(player_list, num_of_gw):
     my_lp_problem = pulp.LpProblem("FPL_LP_Problem", pulp.LpMaximize)
 
     ids = []
@@ -22,7 +22,7 @@ def solve_best_team(player_list):
     for p in player_list:
         ids.append(p.id)
         costs[p.id] = p.value
-        xpts[p.id] = p.gw_xp[0]
+        xpts[p.id] = sum(p.gw_xp[0:num_of_gw])
         gk[p.id] = int(p.position == 1)
         defender[p.id] = int(p.position == 2)
         midfielder[p.id] = int(p.position == 3)
@@ -63,7 +63,7 @@ def solve_best_team(player_list):
 
     for i in ids:
         if selections[i].varValue == 1: # selected players
-            selected.append((names[i], costs[i], xpts[i], "starter"))
+            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "starter":True})
             num_def += defender[i]
             num_mid += midfielder[i]
             num_fwd += forward[i]
@@ -90,14 +90,8 @@ def solve_best_team(player_list):
         team_bench_players = [pid for pid in team_map[team_id] if pid in bench_ids] # number of selected bench players in that team
         bench_problem += pulp.lpSum([1 * sel_bench[i] for i in team_bench_players]) <= allowed_slots
 
-    bench_problem .solve(pulp.PULP_CBC_CMD(msg=False))
+    bench_problem.solve(pulp.PULP_CBC_CMD(msg=False))
     for i in bench_ids:
         if sel_bench[i].varValue == 1: # selected players
-            selected.append((names[i], costs[i], xpts[i], "bench"))
-
+            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "starter":False})
     return selected
-
-
-
-for p in solve_best_team(generate_predictions()):
-    print(f"{p[0]}, {p[1]}, {p[2]}, {p[3]}")
