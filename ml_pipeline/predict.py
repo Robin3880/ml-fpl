@@ -151,4 +151,4 @@ def generate_predictions(season="2025-2026"):
                 player.last_3 = {m: 0.0 for m in last_3_metrics}
 
             player.predict_points(base_model, defcon_model)
-    return player_list
+    return player_list, current_gw

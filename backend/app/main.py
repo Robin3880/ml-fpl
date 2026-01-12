@@ -4,11 +4,13 @@ from ml_pipeline.predict import generate_predictions
 from contextlib import asynccontextmanager
 
 PLAYERS = []
+CURRENT_GW = 1
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global PLAYERS
-    PLAYERS = generate_predictions()
+    global CURRENT_GW
+    PLAYERS, CURRENT_GW = generate_predictions()
     yield
     PLAYERS.clear()
 
@@ -18,7 +20,32 @@ app = FastAPI(lifespan=lifespan)
 def home():
     return {"message": "FPL API is running."}
 
-@app.get("/api/best-team")
+@app.get("/api/players/{player_id}")
+def get_player_details(player_id: int):
+    # Search for the player in the memory
+    player = next((p for p in PLAYERS if p.id == player_id), None)
+    
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    return {
+        "id": player.id,
+        "name": player.web_name,
+        "cost": player.value,
+        "position": player.position,
+        "team": player.team,
+        "selected_by_percent": player.selected_by_percent,
+        "chance_of_playing_this_round": player.chance_of_playing_this_round,
+        "xpts_predictions": {
+            f"gw_{CURRENT_GW + 1}": float(player.gw_xp[0]),
+            f"gw_{CURRENT_GW + 2}": float(player.gw_xp[1]),
+            f"gw_{CURRENT_GW + 3}": float(player.gw_xp[2]),
+            f"gw_{CURRENT_GW + 4}": float(player.gw_xp[2]),
+            f"gw_{CURRENT_GW + 5}": float(player.gw_xp[2]),
+        }
+    }
+
+@app.get("/api/best_team")
 def get_best_team(num_of_gw: int = 1):
     if not PLAYERS:
         raise HTTPException(status_code=503, detail="player data missing")
@@ -39,11 +66,11 @@ def get_best_team(num_of_gw: int = 1):
         "starters": starters,
         "bench": bench,
         "total_cost": sum(p["cost"] for p in result),
-        "total_xp": sum(p["xpts"] for p in result)
+        "total_xpts": sum(p["xpts"] for p in result)
     }
 
-@app.get("/api/player_expected_points")
-def player_expected_points(num_of_gw: int = 1):
+@app.get("/api/players")
+def get_players(num_of_gw: int = 1):
     if not PLAYERS:
         raise HTTPException(status_code=503, detail="player data missing")
     
@@ -59,10 +86,17 @@ def player_expected_points(num_of_gw: int = 1):
             "name": p.web_name,
             "position": pos_map[p.position],
             "cost": int(p.value),
-            "xp": float(sum(p.gw_xp[0:num_of_gw])),            
+            "xpts": float(sum(p.gw_xp[0:num_of_gw])),            
         })
 
     # sort by xp descending
-    player_dicts.sort(key=lambda x: x["xp"], reverse=True)
+    player_dicts.sort(key=lambda x: x["xpts"], reverse=True)
 
     return player_dicts
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "players_loaded": len(PLAYERS),
+    }
