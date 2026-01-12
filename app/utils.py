@@ -9,7 +9,6 @@ import pulp
 
 SEASON = "2025-2026"
 
-# cache path setup 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
 data_folder = os.path.join(root_dir, "data")
