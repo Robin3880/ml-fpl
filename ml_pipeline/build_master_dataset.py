@@ -6,7 +6,7 @@ import time
 import json
 
 SEASON = "2025-2026"
-REFRESH_CACHE = False 
+REFRESH_CACHE = True 
 
 # MERGE CURRENT SEASON DATA FROM OFFICIAL FPL API AND OLBAUDAY FPL CORE INSIGHTS GITHUB INTO ONE MASTER CSV TO USE SO I HAVE MAXIMUM DATA
 
@@ -21,9 +21,12 @@ if not os.path.exists(data_folder):
 if not os.path.exists(cache_folder):
     os.makedirs(cache_folder)
 
+session = requests.Session()
+session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; ml_fpl/1.0; +https://github.com/Robin3880/ml-fpl)"})
+
 # get static fpl api data for players and current gw
 url = "https://fantasy.premierleague.com/api/bootstrap-static/"
-fpl_static = requests.get(url).json()
+fpl_static = session.get(url).json()
 
 current_gw = 0
 for event in fpl_static["events"]:    # current Gameweek
@@ -41,7 +44,7 @@ for player in fpl_static["elements"]:
 
 # get fpl fixtures data for team strengths and context
 fixtures_url = "https://fantasy.premierleague.com/api/fixtures/"
-fixtures = requests.get(fixtures_url).json()
+fixtures = session.get(fixtures_url).json()
 
 fixture_dict = {}
 for fixture in fixtures:
@@ -64,7 +67,7 @@ match_data_dict = {} # scores and elo etc
 
 for gw in range(1, current_gw):
     # 1. Get Matches for this GW
-    response = requests.get(f"{github_url}/By Gameweek/GW{gw}/matches.csv")    
+    response = session.get(f"{github_url}/By Gameweek/GW{gw}/matches.csv")    
     matches_df = pd.read_csv(io.StringIO(response.text))
     
     # add fpl team id's
@@ -88,7 +91,7 @@ for gw in range(1, current_gw):
         }
 
     # player match stats
-    response = requests.get(f"{github_url}/By Gameweek/GW{gw}/playermatchstats.csv")
+    response = session.get(f"{github_url}/By Gameweek/GW{gw}/playermatchstats.csv")
     stats_df = pd.read_csv(io.StringIO(response.text))
     
     # add match stats to dict with triple key
@@ -120,7 +123,7 @@ for player_id, data in players_dict.items():
             history_data = json.load(f)
     else:
         time.sleep(0.01) 
-        response = requests.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/")
+        response = session.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/")
         history_data = response.json()
         with open(cache_file, "w") as f:
             json.dump(history_data, f)

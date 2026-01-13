@@ -11,9 +11,14 @@ def generate_predictions(season="2025-2026"):
     root_dir = os.path.dirname(script_dir)
     data_folder = os.path.join(root_dir, "data")
 
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (compatible; ml_fpl/1.0; +https://github.com/Robin3880/ml-fpl)",
+    })
+
     # fetch current gw
     url = "https://fantasy.premierleague.com/api/bootstrap-static/"
-    data = requests.get(url).json()
+    data = session.get(url).json()
 
     current_gw = 0
     for event in data["events"]:
@@ -24,20 +29,20 @@ def generate_predictions(season="2025-2026"):
     # make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
     current_team_elos = {}
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/2025-2026/By Gameweek/GW{current_gw}/teams.csv"
-    response = requests.get(url)
+    response = session.get(url)
     df = pd.read_csv(io.StringIO(response.text))
     current_team_elos = dict(zip(df["id"], df["elo"]))
     player_dict_by_team = {team_id: {} for team_id in df["id"]}
 
     # for each player, create Player class instance  
     url = "https://fantasy.premierleague.com/api/bootstrap-static/"
-    data = requests.get(url).json()
+    data = session.get(url).json()
     for player in data["elements"]:
         player_dict_by_team[player["team"]][player["id"]] = Player(player)
 
     # get next 5 gamweek fixtures,  for each fixture add to all players from that team
     url = "https://fantasy.premierleague.com/api/fixtures/"
-    data = requests.get(url).json()
+    data = session.get(url).json()
     for f in data:
         if f["event"] and f["event"] >= current_gw and f["event"] - current_gw < 5:
             i = f["event"] - current_gw
