@@ -22,7 +22,6 @@ def home():
 
 @app.get("/api/players/{player_id}")
 def get_player_details(player_id: int):
-    # Search for the player in the memory
     player = next((p for p in PLAYERS if p.id == player_id), None)
     
     if not player:
