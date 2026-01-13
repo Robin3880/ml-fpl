@@ -131,7 +131,7 @@ def generate_predictions(season="2025-2026"):
 
     # reduce dataframe to only current state of player
     df = df.sort_values("gameweek").groupby("player_id").last().reset_index()
-
+    df.fillna(0, inplace=True)
     # get models I created
     with open("models/fpl_xgboost.pkl", "rb") as f:
         base_model = pickle.load(f)
