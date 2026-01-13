@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from backend.app.algorithm import solve_best_team
 from ml_pipeline.predict import generate_predictions
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 PLAYERS = []
 CURRENT_GW = 1
@@ -15,6 +16,14 @@ async def lifespan(app: FastAPI):
     PLAYERS.clear()
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # change to frontend url later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
