@@ -6,7 +6,7 @@ from ml_pipeline.predict import generate_predictions
 # 2.  valid formation  - 1gk,   min 3 def,  min 2 mid,   min 1 fwd                       
 # 3.  max 3 players per club
 
-def solve_best_team(player_list, num_of_gw):
+def solve_best_team(player_list, num_of_gw, differential=False):
     my_lp_problem = pulp.LpProblem("FPL_LP_Problem", pulp.LpMaximize)
 
     ids = []
@@ -17,9 +17,12 @@ def solve_best_team(player_list, num_of_gw):
     midfielder = {}
     forward = {}
     team_map = {}
+    selected_by = {}
     names = {}
 
     for p in player_list:
+        if differential and float(p.selected_by_percent) > 10.0:   # max 10% teams owned by if differential team
+            continue
         ids.append(p.id)
         costs[p.id] = p.value
         xpts[p.id] = sum(p.gw_xp[0:num_of_gw])
@@ -27,6 +30,7 @@ def solve_best_team(player_list, num_of_gw):
         defender[p.id] = int(p.position == 2)
         midfielder[p.id] = int(p.position == 3)
         forward[p.id] = int(p.position == 4)
+        selected_by[p.id] = p.selected_by_percent
         names[p.id] = p.web_name
         tid = p.team  
         if tid not in team_map:
@@ -64,7 +68,7 @@ def solve_best_team(player_list, num_of_gw):
     for i in ids:
         if selections[i].varValue == 1: # selected players
             position = "DEF" if defender[i] else "MID" if midfielder[i] else "FWD" if forward[i] else "GK"
-            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "position":position, "starter":True})
+            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "selected_by_percent":float(selected_by[i]), "position":position, "starter":True})
             num_def += defender[i]
             num_mid += midfielder[i]
             num_fwd += forward[i]
@@ -96,5 +100,5 @@ def solve_best_team(player_list, num_of_gw):
     for i in bench_ids:
         if sel_bench[i].varValue == 1: # selected players
             position = "DEF" if defender[i] else "MID" if midfielder[i] else "FWD" if forward[i] else "GK"
-            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "position":position, "starter":False})
+            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "selected_by_percent":float(selected_by[i]), "position":position, "starter":False})
     return selected

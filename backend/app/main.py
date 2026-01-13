@@ -45,14 +45,14 @@ def get_player_details(player_id: int):
     }
 
 @app.get("/api/best_team")
-def get_best_team(num_of_gw: int = 1):
+def get_best_team(num_of_gw: int = 1, differential: bool = False):
     if not PLAYERS:
         raise HTTPException(status_code=503, detail="player data missing")
     
     if num_of_gw > 5:
         raise HTTPException(status_code=400, detail="max gameweeks is 5") 
 
-    result = solve_best_team(PLAYERS, num_of_gw=num_of_gw)
+    result = solve_best_team(PLAYERS, num_of_gw, differential)
     
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
