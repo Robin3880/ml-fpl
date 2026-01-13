@@ -4,6 +4,13 @@ import os
 import io
 import time
 import json
+import gc
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+
+# rate limiter for parallel api requests
+rate_lock = Lock()
+last_request_time = [0]
 
 SEASON = "2025-2026"
 REFRESH_CACHE = True 
@@ -29,7 +36,7 @@ url = "https://fantasy.premierleague.com/api/bootstrap-static/"
 fpl_static = session.get(url).json()
 
 current_gw = 0
-for event in fpl_static["events"]:    # current Gameweek
+for event in fpl_static["events"]:    # current gameweek
     if event.get("is_current") is True:
         current_gw = event["id"]
         break
@@ -61,6 +68,8 @@ github_url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/main
 
 teams_df = pd.DataFrame(fpl_static["teams"])
 code_to_id_dict = dict(zip(teams_df["code"], teams_df["id"]))
+del teams_df
+gc.collect()
 
 stats_dict = {} # player stats
 match_data_dict = {} # scores and elo etc
@@ -89,6 +98,8 @@ for gw in range(1, current_gw):
             "home_xgc": m_row["away_expected_goals_xg"], 
             "away_xgc": m_row["home_expected_goals_xg"]
         }
+    del matches_df  
+    gc.collect()
 
     # player match stats
     response = session.get(f"{github_url}/By Gameweek/GW{gw}/playermatchstats.csv")
@@ -111,108 +122,205 @@ for gw in range(1, current_gw):
 
         key = row["player_id"], gw, int(opponent_id)  # each player match stat can be accessed by triple key:   player id + gw ( + opponenet id    incase of double gameweek)
         stats_dict[key] = row
+    
+    del stats_df  
+    gc.collect()
             
 # merge fpl and github data
 rows = []
-for player_id, data in players_dict.items():
+
+def fetch_player_data(player_id, cache_folder):
     cache_file = os.path.join(cache_folder, f"player_{player_id}.json")
-    history_data = None
-    # check cache for player data
+    
     if not REFRESH_CACHE and os.path.exists(cache_file):
         with open(cache_file, "r") as f:
-            history_data = json.load(f)
+            return player_id, json.load(f)
     else:
-        time.sleep(0.01) 
+        with rate_lock:  # only one thread can access at time
+            time_since_last = time.time() - last_request_time[0]
+            if time_since_last < 0.01:  # limit to request every 0.01s
+                time.sleep(0.01 - time_since_last)  # wait remaining time
+            last_request_time[0] = time.time()  
+
         response = session.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/")
         history_data = response.json()
         with open(cache_file, "w") as f:
             json.dump(history_data, f)
+        return player_id, history_data
 
-    for match in history_data["history"]:
-        gameweek = match["round"]
-        fixture_id = match["fixture"]
-        opponent_id = match["opponent_team"]
-        was_home = match["was_home"]
+# fetch players in parrallel
+rows = []
+with ThreadPoolExecutor(max_workers=10) as executor:
+    futures = {executor.submit(fetch_player_data, pid, cache_folder): pid 
+               for pid in players_dict.keys()}
+    
+    for future in futures:
+        player_id, history_data = future.result()
+        data = players_dict[player_id]
         
-        row = {   # data needed from fpl api
-            "name": data["name"],
-            "player_id": player_id,
-            "team_id": data["team_id"],
-            "position": data["position"],
-            "gameweek": gameweek,
-            "kickoff_time": match["kickoff_time"],
-            "was_home": 1 if was_home else 0,
-            "opponent_id": opponent_id,
-            "value": match["value"],
-            "total_points": match["total_points"],
-            "minutes": match["minutes"],
-            "goals_scored": match["goals_scored"],
-            "assists": match["assists"],
-            "clean_sheets": match["clean_sheets"],
-            "goals_conceded": match["goals_conceded"], 
-            "own_goals": match["own_goals"],
-            "penalties_saved": match["penalties_saved"],
-            "penalties_missed": match["penalties_missed"],
-            "yellow_cards": match["yellow_cards"],
-            "red_cards": match["red_cards"],
-            "saves": match["saves"],
-            "bonus": match["bonus"],
-            "bps": match["bps"],
-            "influence": match["influence"],
-            "creativity": match["creativity"],
-            "threat": match["threat"],
-            "ict_index": match["ict_index"],
-        }
-        
-        # get strengths
-        f_info = fixture_dict[fixture_id]
-        if was_home:
-            row["team_strength"] = f_info["a_diff"]
-            row["opponent_strength"] = f_info["h_diff"]
-        else:
-            row["opponent_strength"] = f_info["a_diff"]
-            row["team_strength"] = f_info["h_diff"]
+        for match in history_data["history"]:
+            gameweek = match["round"]
+            fixture_id = match["fixture"]
+            opponent_id = match["opponent_team"]
+            was_home = match["was_home"]
+            
+            row = {   # data needed from fpl api
+                "name": data["name"],
+                "player_id": player_id,
+                "team_id": data["team_id"],
+                "position": data["position"],
+                "gameweek": gameweek,
+                "kickoff_time": match["kickoff_time"],
+                "was_home": 1 if was_home else 0,
+                "opponent_id": opponent_id,
+                "value": match["value"],
+                "total_points": match["total_points"],
+                "minutes": match["minutes"],
+                "goals_scored": match["goals_scored"],
+                "assists": match["assists"],
+                "clean_sheets": match["clean_sheets"],
+                "goals_conceded": match["goals_conceded"], 
+                "own_goals": match["own_goals"],
+                "penalties_saved": match["penalties_saved"],
+                "penalties_missed": match["penalties_missed"],
+                "yellow_cards": match["yellow_cards"],
+                "red_cards": match["red_cards"],
+                "saves": match["saves"],
+                "bonus": match["bonus"],
+                "bps": match["bps"],
+                "influence": match["influence"],
+                "creativity": match["creativity"],
+                "threat": match["threat"],
+                "ict_index": match["ict_index"],
+            }
+            
+            # get strengths
+            f_info = fixture_dict[fixture_id]
+            if was_home:
+                row["team_strength"] = f_info["a_diff"]
+                row["opponent_strength"] = f_info["h_diff"]
+            else:
+                row["opponent_strength"] = f_info["a_diff"]
+                row["team_strength"] = f_info["h_diff"]
 
-        # add advanced stats from github
-        key = (player_id, gameweek, int(opponent_id))
-        adv = stats_dict.get(key, {})
-        row["expected_goals"] = adv.get("xg", 0.0)
-        row["expected_assists"] = adv.get("xa", 0.0)
-        row["clearances"] = adv.get("clearances", 0)
-        row["blocks"] = adv.get("blocks", 0)
-        row["interceptions"] = adv.get("interceptions", 0)
-        row["tackles"] = adv.get("tackles", 0)
-        row["recoveries"] = adv.get("recoveries", 0)
-        row["tackles_won"] = adv.get("tackles_won", 0)
-        row["duels_won"] = adv.get("duels_won", 0)
-        row["aerial_duels_won"] = adv.get("aerial_duels_won", 0)
-        row["team_goals_conceded"] = adv.get("team_goals_conceded")
-        row["headed_clearances"] = adv.get("headed_clearances", 0)
-        row["duels_lost"] = adv.get("duels_lost", 0)
-        row["ground_duels_won"] = adv.get("ground_duels_won", 0)
-        row["fouls_committed"] = adv.get("fouls_committed", 0) 
-        row["sweeper_actions"] = adv.get("sweeper_actions", 0)
-        row["cbit"] = row["clearances"] + row["blocks"] + row["interceptions"] + row["tackles"]
-        row["cbirt"] = row["cbit"] + row["recoveries"]     
+            # add advanced stats from github
+            key = (player_id, gameweek, int(opponent_id))
+            adv = stats_dict.get(key, {})
+            row["expected_goals"] = adv.get("xg", 0.0)
+            row["expected_assists"] = adv.get("xa", 0.0)
+            row["clearances"] = adv.get("clearances", 0)
+            row["blocks"] = adv.get("blocks", 0)
+            row["interceptions"] = adv.get("interceptions", 0)
+            row["tackles"] = adv.get("tackles", 0)
+            row["recoveries"] = adv.get("recoveries", 0)
+            row["tackles_won"] = adv.get("tackles_won", 0)
+            row["duels_won"] = adv.get("duels_won", 0)
+            row["aerial_duels_won"] = adv.get("aerial_duels_won", 0)
+            row["team_goals_conceded"] = adv.get("team_goals_conceded")
+            row["headed_clearances"] = adv.get("headed_clearances", 0)
+            row["duels_lost"] = adv.get("duels_lost", 0)
+            row["ground_duels_won"] = adv.get("ground_duels_won", 0)
+            row["fouls_committed"] = adv.get("fouls_committed", 0) 
+            row["sweeper_actions"] = adv.get("sweeper_actions", 0)
+            row["cbit"] = row["clearances"] + row["blocks"] + row["interceptions"] + row["tackles"]
+            row["cbirt"] = row["cbit"] + row["recoveries"]     
 
-        # get team elos and expected goals conceded
-        m_info = match_data_dict.get(adv.get("match_id"), {})
-        
-        if was_home:
-            row["team_elo"] = m_info.get("home_team_elo")
-            row["opponent_elo"] = m_info.get("away_team_elo")
-            row["expected_goals_conceded"] = m_info.get("home_xgc")
-        else:
-            row["team_elo"] = m_info.get("away_team_elo")
-            row["opponent_elo"] = m_info.get("home_team_elo")
-            row["expected_goals_conceded"] = m_info.get("away_xgc")
+            # get team elos and expected goals conceded
+            m_info = match_data_dict.get(adv.get("match_id"), {})
+            
+            if was_home:
+                row["team_elo"] = m_info.get("home_team_elo")
+                row["opponent_elo"] = m_info.get("away_team_elo")
+                row["expected_goals_conceded"] = m_info.get("home_xgc")
+            else:
+                row["team_elo"] = m_info.get("away_team_elo")
+                row["opponent_elo"] = m_info.get("home_team_elo")
+                row["expected_goals_conceded"] = m_info.get("away_xgc")
 
-        rows.append(row)
+            rows.append(row)
 
 df_master = pd.DataFrame(rows)
+
+# calculate rolling stats
+last_6_metrics = [
+        "minutes", 
+        "total_points", 
+        "expected_goals", 
+        "expected_assists", 
+        "expected_goals_conceded",
+        "goals_scored", 
+        "assists", 
+        "clean_sheets", 
+        "goals_conceded",
+        "own_goals", 
+        "penalties_saved", 
+        "penalties_missed",
+        "yellow_cards", 
+        "red_cards", 
+        "saves", 
+        "bonus", 
+        "bps",
+        "influence", 
+        "threat", 
+        "ict_index",
+        "cbit",
+        "cbirt",
+        "clearances",
+        "blocks",
+        "interceptions",
+        "tackles",
+        "recoveries",           
+        "tackles_won",       
+        "headed_clearances", 
+        "duels_won",          
+        "duels_lost",        
+        "ground_duels_won",  
+        "aerial_duels_won",   
+        "fouls_committed",   
+        "sweeper_actions",    
+        "goals_conceded",
+        "team_goals_conceded"
+    ]
+
+last_3_metrics = [   
+    "minutes",         
+    "total_points",     
+    "expected_goals",  
+    "expected_assists", 
+    "saves",           
+    "bps",
+    "cbit",
+    "cbirt",
+    "clearances",
+    "blocks",
+    "interceptions",
+    "tackles",
+    "recoveries",
+]
+
+# Calculate Rolling 6
+for metric in last_6_metrics:
+    df_master[f"last_6_{metric}"] = df_master.groupby("player_id")[metric].transform(
+        lambda x: x.rolling(window=6, min_periods=1).sum()
+    )
+
+# Calculate Rolling 3
+for metric in last_3_metrics:
+    df_master[f"last_3_{metric}"] = df_master.groupby("player_id")[metric].transform(
+        lambda x: x.rolling(window=3, min_periods=1).sum()
+    )
+
+
 df_master["kickoff_time"] = pd.to_datetime(df_master["kickoff_time"])
 df_master = df_master.sort_values(by=["player_id", "gameweek"])
+df_master.fillna(0, inplace=True)
 
 # save master data csv
 output_path = os.path.join(data_folder, f"master_{SEASON}_data.csv")
 df_master.to_csv(output_path, index=False)
+
+del df_master
+del rows
+del stats_dict
+del match_data_dict
+gc.collect()

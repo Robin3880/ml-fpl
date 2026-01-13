@@ -3,6 +3,7 @@ import requests
 import os
 import pickle
 import io
+import gc
 from backend.app.classes.player import Player 
 from backend.app.classes.fixture import Fixture
 
@@ -33,6 +34,8 @@ def generate_predictions(season="2025-2026"):
     df = pd.read_csv(io.StringIO(response.text))
     current_team_elos = dict(zip(df["id"], df["elo"]))
     player_dict_by_team = {team_id: {} for team_id in df["id"]}
+    del df  # free memory immediately
+    gc.collect()
 
     # for each player, create Player class instance  
     url = "https://fantasy.premierleague.com/api/bootstrap-static/"
@@ -57,10 +60,21 @@ def generate_predictions(season="2025-2026"):
             for player in player_dict_by_team[a_id]:
                 player_dict_by_team[a_id][player].fixtures[i].append(away_fixture)
 
-    # load in master df,  for each player calculate rollint stats 
-    player_stats = os.path.join(data_folder, f"master_{season}_data.csv")
-    df = pd.read_csv(player_stats)
+    # load in master df
+    df_path = os.path.join(data_folder, f"master_{season}_data.csv")
+    df = pd.read_csv(df_path) 
 
+    # reduce dataframe to only current state of player 
+    df = df.sort_values("gameweek").groupby("player_id").last()
+
+    # get models I created
+    with open("models/fpl_xgboost.pkl", "rb") as f:
+        base_model = pickle.load(f)
+
+    with open("models/fpl_defcon_xgboost.pkl", "rb") as f:
+        defcon_model = pickle.load(f)
+
+    # define metrics used for predictions
     last_6_metrics = [
         "minutes", 
         "total_points", 
@@ -117,43 +131,26 @@ def generate_predictions(season="2025-2026"):
         "recoveries",
     ]
 
-    # Calculate Rolling 6
-    for metric in last_6_metrics:
-        df[f"last_6_{metric}"] = df.groupby("player_id")[metric].transform(
-            lambda x: x.rolling(window=6, min_periods=1).sum()
-        )
-
-    # Calculate Rolling 3
-    for metric in last_3_metrics:
-        df[f"last_3_{metric}"] = df.groupby("player_id")[metric].transform(
-            lambda x: x.rolling(window=3, min_periods=1).sum()
-        )
-
-    # reduce dataframe to only current state of player
-    df = df.sort_values("gameweek").groupby("player_id").last().reset_index()
-    df.fillna(0, inplace=True)
-    # get models I created
-    with open("models/fpl_xgboost.pkl", "rb") as f:
-        base_model = pickle.load(f)
-
-    with open("models/fpl_defcon_xgboost.pkl", "rb") as f:
-        defcon_model = pickle.load(f)
-
     # for each player"s fixture predict points
     player_list = []
     for team_id in player_dict_by_team:
         for p_id in player_dict_by_team[team_id]:
             player = player_dict_by_team[team_id][p_id]
             player_list.append(player)
-            stat_row = df[df["player_id"] == p_id]
 
-            if not stat_row.empty:
-                player.last_6 = {m: float(stat_row[f"last_6_{m}"].iloc[0]) for m in last_6_metrics}
-                player.last_3 = {m: float(stat_row[f"last_3_{m}"].iloc[0]) for m in last_3_metrics}
+            if p_id in df.index:
+                stat_row = df.loc[p_id]
+                player.last_6 = {m: float(stat_row[f"last_6_{m}"]) for m in last_6_metrics}
+                player.last_3 = {m: float(stat_row[f"last_3_{m}"]) for m in last_3_metrics}
             else:
                 # new player with no stats
                 player.last_6 = {m: 0.0 for m in last_6_metrics}
                 player.last_3 = {m: 0.0 for m in last_3_metrics}
 
             player.predict_points(base_model, defcon_model)
+    # cleanup
+    del df
+    del base_model
+    del defcon_model
+    gc.collect()
     return player_list, current_gw
