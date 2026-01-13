@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from backend.app.algorithm import solve_best_team
 from ml_pipeline.predict import generate_predictions
 from contextlib import asynccontextmanager
@@ -69,7 +69,7 @@ def get_best_team(num_of_gw: int = 1):
     }
 
 @app.get("/api/players")
-def get_players(num_of_gw: int = 1):
+def get_players(num_of_gw: int = 1, sort_by: str = Query("xpts", enum=["xpts","xpts_per_cost"])):
     if not PLAYERS:
         raise HTTPException(status_code=503, detail="player data missing")
     
@@ -85,11 +85,15 @@ def get_players(num_of_gw: int = 1):
             "name": p.web_name,
             "position": pos_map[p.position],
             "cost": int(p.value),
-            "xpts": float(sum(p.gw_xp[0:num_of_gw])),            
+            "xpts": float(sum(p.gw_xp[0:num_of_gw])),    
+            "xpts_per_cost": float(sum(p.gw_xp[0:num_of_gw]) / (p.value / 10))    
         })
 
-    # sort by xp descending
-    player_dicts.sort(key=lambda x: x["xpts"], reverse=True)
+    # sort by xpts or xpts per cost descending
+    if sort_by == "xpts":
+        player_dicts.sort(key=lambda x: x["xpts"], reverse=True)
+    else:
+        player_dicts.sort(key=lambda x: x["xpts_per_cost"], reverse=True)
 
     return player_dicts
 
