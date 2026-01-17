@@ -17,9 +17,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# use CORS so browser doesnt block requests (allow cross origin requests for react/fastapi)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to frontend url later
+    allow_origins=["http://localhost:5173"],  # local host vite port for testing,  change to frontend url later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
