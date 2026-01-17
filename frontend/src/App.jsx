@@ -1,11 +1,18 @@
-function App() {
+import { useEffect, useState } from 'react'
+import PlayerListComponent from './components/PlayerList.jsx';
 
+function App() {
 
   return (
     <div>
-       <h1>Hello World</h1>
+      <header>
+        <h1>Fpl Points Predictor</h1>
+      </header>
+      <main>
+        <PlayerListComponent />
+      </main>
     </div>
-  )
+  );
 }
 
 export default App
