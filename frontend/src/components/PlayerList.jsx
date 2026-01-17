@@ -3,7 +3,7 @@ import api from '../api';
 
 const PlayerList = () => {
 
-  const [players, setPlayers] = useState([]);          // players variabe and its setter funciton, useState saves data between functions runs
+  const [players, setPlayers] = useState([]);          // players variable and its setter funciton, useState saves data between functions runs
 
   const fetchPlayers = async () => {
     const response = await api.get("players");
@@ -18,7 +18,7 @@ const PlayerList = () => {
     <div className="max-w-4xl mx-auto text-gray-300">
       <h2 className="text-2xl font-bold mb-4 text-purple-400">Leaderboard</h2>
 
-      <div className="border border-gray-800 rounded overflow-hidden">
+      <div className="border border-gray-800 rounded">
         <table className="w-full text-left">
           <thead className="bg-gray-900 text-gray-500 border-b border-gray-800">
             <tr>

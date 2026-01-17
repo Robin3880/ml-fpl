@@ -74,8 +74,8 @@ def get_best_team(num_of_gw: int = 1, differential: bool = False):
     return {
         "starters": starters,
         "bench": bench,
-        "total_cost": sum(p["cost"] for p in result),
-        "total_xpts": sum(p["xpts"] for p in result)
+        "total_cost": sum(p["cost"] for p in result if p["starter"] == True),
+        "total_xpts": sum(p["xpts"] for p in result if p["starter"] == True)
     }
 
 @app.get("/api/players")
