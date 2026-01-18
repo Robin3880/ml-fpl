@@ -47,7 +47,7 @@ const PlayerList = () => {
                 <td className="p-4 text-sm">{p.position}</td>
 
                 {/* Cost */}
-                <td className="p-4">{(p.cost / 100).toFixed(1)}m</td>
+                <td className="p-4">{(p.cost / 10).toFixed(1)}m</td>
 
                 {/* xPoints */}
                 <td className="p-4 text-right font-bold text-purple-400">

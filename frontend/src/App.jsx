@@ -16,6 +16,9 @@ return (
             <Route path="/players/:id" element={<Player />} /> 
           </Routes>
         </div>
+        <footer className="w-full py-6 border-t border-gray-800 text-center text-white">
+          <p>© {new Date().getFullYear()} Robin Konrad. All rights reserved.</p>
+        </footer>
       </div>
     </BrowserRouter>
   );
