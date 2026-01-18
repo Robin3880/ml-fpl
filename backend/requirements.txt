@@ -7,6 +7,6 @@ pandas
 numpy
 scipy
 pulp
-xgboost
+xgboost==3.1.2
 scikit-learn
 scikit-optimize
