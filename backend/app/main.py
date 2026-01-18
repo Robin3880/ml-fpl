@@ -51,8 +51,8 @@ def get_player_details(player_id: int):
             f"gw_{CURRENT_GW + 1}": float(player.gw_xp[0]),
             f"gw_{CURRENT_GW + 2}": float(player.gw_xp[1]),
             f"gw_{CURRENT_GW + 3}": float(player.gw_xp[2]),
-            f"gw_{CURRENT_GW + 4}": float(player.gw_xp[2]),
-            f"gw_{CURRENT_GW + 5}": float(player.gw_xp[2]),
+            f"gw_{CURRENT_GW + 4}": float(player.gw_xp[3]),
+            f"gw_{CURRENT_GW + 5}": float(player.gw_xp[4]),
         }
     }
 
