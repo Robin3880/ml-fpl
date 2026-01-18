@@ -3,6 +3,7 @@ __pycache__/
 player_cache/
 data/
 models/
+backups/
 *:Zone.Identifier
 *.Zone.Identifier
 

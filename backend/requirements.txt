@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+gunicorn
+requests
+apscheduler
+pandas
+numpy
+scipy
+pulp
+xgboost
+scikit-learn
+scikit-optimize

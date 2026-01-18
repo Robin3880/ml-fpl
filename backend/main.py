@@ -1,18 +1,88 @@
 from fastapi import FastAPI, HTTPException, Query
-from backend.app.algorithm import solve_best_team
+from algorithm import solve_best_team
 from ml_pipeline.predict import generate_predictions
+from ml_pipeline.build_master_dataset import run_pipeline
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.background import BackgroundScheduler
+
+import requests
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 PLAYERS = []
 CURRENT_GW = 1
+
+def get_actual_fpl_gw():
+    # fetch current active gw
+    try:
+        url = "https://fantasy.premierleague.com/api/bootstrap-static/"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        current_event = next((event for event in data['events'] if event['is_current']), None)
+        
+        if current_event:
+            return current_event['id']
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching FPL data: {e}")
+        return None
+
+def check_and_update_data():
+    # check if current gw has changed, if it has update data and generate predicitons
+    global PLAYERS
+    global CURRENT_GW
+
+    logger.info("Scheduler: Checking for gameweek updates...")
+    
+    actual_gw = get_actual_fpl_gw()
+
+    if actual_gw is None:
+        return
+
+    if actual_gw != CURRENT_GW:
+        logger.info(f"New Gameweek (Old: {CURRENT_GW}, New: {actual_gw})")
+        logger.info("Triggering master dataset rebuild...")
+        
+        try:
+            run_pipeline() 
+            logger.info("Dataset rebuild complete.")
+
+            new_players, new_gw = generate_predictions()
+            
+            PLAYERS = new_players
+            CURRENT_GW = new_gw
+            
+            logger.info(f"Successfully updated to Gameweek {CURRENT_GW}")
+            
+        except Exception as e:
+            logger.error(f"CRITICAL: Update data failed: {e}")
+    else:
+        logger.info(f"No new gameweek detected (Current: {CURRENT_GW}).")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global PLAYERS
     global CURRENT_GW
+
+    # initial load on startup
+    logger.info("Startup: Loading initial predictions...")
     PLAYERS, CURRENT_GW = generate_predictions()
+    logger.info(f"Startup Complete. Data loaded for GW {CURRENT_GW}")
+
+    # start scheduler
+    scheduler = BackgroundScheduler()
+    # check every day at 1 am
+    scheduler.add_job(check_and_update_data, 'cron', hour=1, minute=0)
+    scheduler.start()
+    
     yield
+    # shutdown
+    scheduler.shutdown()
     PLAYERS.clear()
 
 app = FastAPI(lifespan=lifespan)
@@ -20,12 +90,12 @@ app = FastAPI(lifespan=lifespan)
 # use CORS so browser doesnt block requests (allow cross origin requests for react/fastapi)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # local host vite port for testing,  change to frontend url later
+    allow_origins=["http://localhost:5173", "https://fpl-frontend.azurestaticapps.net"],  # local host vite port for testing and frontend url
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+    
 @app.get("/")
 def home():
     return {"message": "FPL API is running."}

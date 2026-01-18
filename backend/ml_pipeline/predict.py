@@ -4,8 +4,8 @@ import os
 import pickle
 import io
 import gc
-from backend.app.classes.player import Player 
-from backend.app.classes.fixture import Fixture
+from classes.player import Player 
+from classes.fixture import Fixture
 
 def generate_predictions(season="2025-2026"):
     script_dir = os.path.dirname(os.path.abspath(__file__))
