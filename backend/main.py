@@ -5,7 +5,7 @@ from ml_pipeline.build_master_dataset import run_pipeline
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
-
+import os
 import requests
 import logging
 
@@ -90,7 +90,7 @@ app = FastAPI(lifespan=lifespan)
 # use CORS so browser doesnt block requests (allow cross origin requests for react/fastapi)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://fpl-frontend.azurestaticapps.net"],  # local host vite port for testing and frontend url
+    allow_origins=["http://localhost:5173", "https://ml-fpl.vercel.app"],  # local host vite port for testing and frontend url
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
