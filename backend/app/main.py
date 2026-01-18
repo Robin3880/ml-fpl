@@ -37,11 +37,13 @@ def get_player_details(player_id: int):
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     
+    pos_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+
     return {
         "id": player.id,
         "name": player.web_name,
         "cost": player.value,
-        "position": player.position,
+        "position": pos_map[player.position],
         "team": player.team,
         "selected_by_percent": player.selected_by_percent,
         "chance_of_playing_this_round": player.chance_of_playing_this_round,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api';
+import { Link } from 'react-router-dom';
 
 const PlayerList = () => {
 
@@ -36,7 +37,11 @@ const PlayerList = () => {
                 <td className="p-4 text-gray-600">{i + 1}</td>
 
                 {/* name */}
-                <td className="p-4 font-bold text-white">{p.name}</td>
+                <td className="p-4 font-bold text-white">
+                  <Link to={`/players/${p.id}`} className="hover:underline hover:text-purple-400">
+                    {p.name}
+                  </Link>
+                </td>
 
                 {/* Position */}
                 <td className="p-4 text-sm">{p.position}</td>

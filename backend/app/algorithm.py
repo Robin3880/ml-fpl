@@ -68,7 +68,7 @@ def solve_best_team(player_list, num_of_gw, differential=False):
     for i in ids:
         if selections[i].varValue == 1: # selected players
             position = "DEF" if defender[i] else "MID" if midfielder[i] else "FWD" if forward[i] else "GK"
-            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "selected_by_percent":float(selected_by[i]), "position":position, "starter":True})
+            selected.append({"id":i, "name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "selected_by_percent":float(selected_by[i]), "position":position, "starter":True})
             num_def += defender[i]
             num_mid += midfielder[i]
             num_fwd += forward[i]
@@ -100,5 +100,5 @@ def solve_best_team(player_list, num_of_gw, differential=False):
     for i in bench_ids:
         if sel_bench[i].varValue == 1: # selected players
             position = "DEF" if defender[i] else "MID" if midfielder[i] else "FWD" if forward[i] else "GK"
-            selected.append({"name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "selected_by_percent":float(selected_by[i]), "position":position, "starter":False})
+            selected.append({"id":i, "name":names[i], "cost":int(costs[i]), "xpts":float(xpts[i]), "selected_by_percent":float(selected_by[i]), "position":position, "starter":False})
     return selected
