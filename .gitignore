@@ -3,6 +3,8 @@ __pycache__/
 player_cache/
 data/
 models/
+*:Zone.Identifier
+*.Zone.Identifier
 
 # Node / React
 
