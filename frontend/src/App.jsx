@@ -7,9 +7,9 @@ import Player from "./components/Player.jsx";
 function App() {
 return (
     <BrowserRouter>
-      <div className="min-h-screen bg-black text-white font-sans">
+      <div className="flex flex-col min-h-screen bg-black text-white font-sans">
         <Navbar />
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-6 flex-grow">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/players" element={<PlayerList />} />
