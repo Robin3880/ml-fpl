@@ -20,6 +20,7 @@
     - **GW Range:** Optimise for 1-5 next Gameweeks for short or long term insights.
     - **Team Strategy:** Choose between Best XI for maximum xPts or Differential for low owned players whose performances will rank you up the most in FPL.
 - **React Website:** Frontend built with React and Tailwind for visualising the optimal team, see players ranked, and get individual player stats.
+- **Automated Updates:** backend has a  background scheduler to check the FPL API at 1 AM each day and get the current Gameweek. If there is a change it triggers a rebuild of the master dataset and generates new predictions.
 
 ---
 
@@ -81,7 +82,9 @@
 * `GET /api/players`: Returns full list of players sorted by xPts or xPts/cost.
     * *Parameters:* `num_of_gw` (int), `sort_by` (str)
 * `GET /api/player/{id}`: Returns specific detailed stats for a individual player.
+* `GET /health`: Returns health status and total loaded player count.
 
+> **Live Interactive API:** The API endpoints are testable live with the FastAPI UI https://fpl-fastapi.azurewebsites.net/docs.
 ---
 
 ## > Installation / Setup
@@ -112,3 +115,4 @@ npm install
 
 # run local react server (accessible on http://localhost:5173)
 npm run dev
+
