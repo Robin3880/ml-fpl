@@ -14,7 +14,11 @@ const Dashboard = () => {
   const [teamType, setTeamType] = useState("best"); // "best" or "differential"
   const [range, setRange] = useState(1);        // 1-5  gameweeks taken into account
 
+  const [loading, setLoading] = useState(true);  // loading state for when players arent loaded in yet
+
   const fetchTeam = async () => {
+    setLoading(true);
+
     const params = {
       num_of_gw: range
     };
@@ -25,6 +29,8 @@ const Dashboard = () => {
 
     const response = await api.get("best_team", { params });
     setTeamData(response.data)
+
+    setLoading(false);
   };
 
   useEffect(() => {                 // runs once initally
@@ -89,13 +95,24 @@ const Dashboard = () => {
       </div>
 
       {/* pitch */}
-      <div className="bg-emerald-950 rounded-lg p-4 h-[600px] flex flex-col justify-between mb-6">
-        {/* position rows */}
-        <div className="flex justify-center">{getPos("GK").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
-        <div className="flex justify-around px-4">{getPos("DEF").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
-        <div className="flex justify-around px-2">{getPos("MID").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
-        <div className="flex justify-around px-10">{getPos("FWD").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
-      </div>
+      <div className="relative bg-emerald-950 rounded-lg p-4 h-[600px] flex flex-col justify-between mb-6">
+      {loading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {/* loading spinner while fetching */}
+            <svg className="animate-spin h-12 w-12 text-white-500 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M 12 2 a 10 10 0 0 0 -10 10M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        ) : (
+          <div className="flex flex-col justify-between h-full">
+            <div className="flex justify-center">{getPos("GK").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
+            <div className="flex justify-around px-4">{getPos("DEF").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
+            <div className="flex justify-around px-2">{getPos("MID").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
+            <div className="flex justify-around px-10">{getPos("FWD").map((p, i) => <PlayerIcon key={i} p={p} />)}</div>
+          </div>
+        )}
+        </div>
 
       {/* bench */}
       <div className="bg-gray-900 rounded p-4">
