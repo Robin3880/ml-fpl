@@ -58,7 +58,7 @@ const Player = () => {
 
                 <div className="bg-gray-900 border border-gray-800 p-4 rounded text-center">
                     <p className="text-xs text-gray-500 uppercase font-bold">Chance of Playing</p>
-                    <p className="text-2xl font-bold text-white">{Player.chance_of_playing_this_round}%</p>
+                    <p className="text-2xl font-bold text-white">{Player.chance_of_playing_this_round ?? 100}%</p>
                 </div>
 
             </div>
