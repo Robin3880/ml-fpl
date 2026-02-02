@@ -4,11 +4,11 @@ import { useParams } from 'react-router-dom';
 import jerseyImg from '../assets/jersey.svg';
 
 const teamMap = {    // 2025-2026 season
-    1: "Arsenal", 2: "Aston Villa", 3: "Bournemouth", 4: "Brentford",
-    5: "Brighton", 6: "Chelsea", 7: "Crystal Palace", 8: "Everton",
-    9: "Fulham", 10: "Ipswich", 11: "Leicester", 12: "Liverpool",
+    1: "Arsenal", 2: "Aston Villa", 3: "Burnley", 4: "Bournemouth",
+    5: "Brentford", 6: "Brighton", 7: "Chelsea", 8: "Crystal Palace",
+    9: "Everton", 10: "Fulham", 11: "Leeds", 12: "Liverpool",
     13: "Man City", 14: "Man Utd", 15: "Newcastle", 16: "Nott'm Forest",
-    17: "Southampton", 18: "Spurs", 19: "West Ham", 20: "Wolves"
+    17: "Sunderland", 18: "Spurs", 19: "West Ham", 20: "Wolves"
 };
 
 const Player = () => {
