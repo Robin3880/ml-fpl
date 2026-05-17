@@ -27,15 +27,12 @@ jobs:
         run: |
           python -m venv antenv
           source antenv/bin/activate
-          # FIX 1: Point to the requirements file inside backend/
           pip install -r backend/requirements.txt
                 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          # FIX 2: Only upload the 'backend' folder
-          # This ensures that main.py ends up at the root of your server
           path: backend/
 
   deploy:
