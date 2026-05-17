@@ -17,16 +17,6 @@ def generate_predictions(season="2025-2026"):
         "User-Agent": "Mozilla/5.0 (compatible; ml_fpl/1.0; +https://github.com/Robin3880/ml-fpl)",
     })
 
-    # fetch current gw
-    url = "https://fantasy.premierleague.com/api/bootstrap-static/"
-    data = session.get(url).json()
-
-    current_gw = 0
-    for event in data["events"]:
-        if event.get("is_current") is True:
-            current_gw = event["id"]
-            break
-
     # make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
     current_team_elos = {}
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/2025-2026/By Gameweek/GW{current_gw}/teams.csv"
@@ -42,6 +32,13 @@ def generate_predictions(season="2025-2026"):
     data = session.get(url).json()
     for player in data["elements"]:
         player_dict_by_team[player["team"]][player["id"]] = Player(player)
+
+    # set current gw
+    current_gw = 0
+    for event in data["events"]:
+        if event.get("is_current") is True:
+            current_gw = event["id"]
+            break
 
     # get next 5 gamweek fixtures,  for each fixture add to all players from that team
     url = "https://fantasy.premierleague.com/api/fixtures/"
@@ -111,7 +108,6 @@ def generate_predictions(season="2025-2026"):
         "aerial_duels_won",   
         "fouls_committed",   
         "sweeper_actions",    
-        "goals_conceded",
         "team_goals_conceded"
     ]
 
