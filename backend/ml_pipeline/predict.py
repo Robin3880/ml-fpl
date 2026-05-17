@@ -17,6 +17,21 @@ def generate_predictions(season="2025-2026"):
         "User-Agent": "Mozilla/5.0 (compatible; ml_fpl/1.0; +https://github.com/Robin3880/ml-fpl)",
     })
 
+    # set current gw
+    current_gw = 0
+    url = "https://fantasy.premierleague.com/api/bootstrap-static/"
+    data = session.get(url).json()
+    for event in data["events"]:
+        if event.get("is_current") is True:
+            current_gw = event["id"]
+            break
+    
+    # DEMO MODE OVERRIDE
+    # set to GW 33 during the Premier League off season so there are always 5 fixtures left (33, 34, 35, 36, 37) to demo the models
+    OFFSEASON_DEMO_MODE = True 
+    if OFFSEASON_DEMO_MODE:
+        current_gw = 33
+
     # make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
     current_team_elos = {}
     url = f"https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/refs/heads/main/data/2025-2026/By Gameweek/GW{current_gw}/teams.csv"
@@ -32,13 +47,6 @@ def generate_predictions(season="2025-2026"):
     data = session.get(url).json()
     for player in data["elements"]:
         player_dict_by_team[player["team"]][player["id"]] = Player(player)
-
-    # set current gw
-    current_gw = 0
-    for event in data["events"]:
-        if event.get("is_current") is True:
-            current_gw = event["id"]
-            break
 
     # get next 5 gamweek fixtures,  for each fixture add to all players from that team
     url = "https://fantasy.premierleague.com/api/fixtures/"
@@ -149,4 +157,4 @@ def generate_predictions(season="2025-2026"):
     del base_model
     del defcon_model
     gc.collect()
-    return player_list
+    return player_list, current_gw

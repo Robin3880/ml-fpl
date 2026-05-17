@@ -17,6 +17,9 @@ CURRENT_GW = None
 TEAM_NAMES_MAP = {}  
 POS_MAP = {}        
 
+# DEMO MODE - during Premier Leauge offseason freeze gw at 33 and disable scheduled data updates
+OFFSEASON_DEMO_MODE = True
+
 def get_actual_fpl_gw():
     # set pos and team name maps once on initializaion
     # fetch current active gw
@@ -48,6 +51,9 @@ def check_and_update_data():
     global CURRENT_GW
 
     logger.info("Scheduler: Checking for gameweek updates...")
+    if OFFSEASON_DEMO_MODE:
+        logger.info("Scheduler: Update check bypassed. App is in Offseason Demo Mode.")
+        return
     
     actual_gw = get_actual_fpl_gw()
 
@@ -80,20 +86,24 @@ async def lifespan(app: FastAPI):
     global CURRENT_GW
 
     # initial load on startup
+    logger.info("Startup: Populating Team/Position structures...")
+    get_actual_fpl_gw()
     logger.info("Startup: Loading initial predictions...")
-    PLAYERS = generate_predictions()
-    CURRENT_GW = get_actual_fpl_gw()
+    PLAYERS, CURRENT_GW = generate_predictions()
     logger.info(f"Startup Complete. Data loaded for GW {CURRENT_GW}")
 
-    # start scheduler
     scheduler = BackgroundScheduler()
-    # check every day at 1 am
-    scheduler.add_job(check_and_update_data, "cron", hour=1, minute=0)
-    scheduler.start()
+    # if not in demo mode, check for updates every day at 1 am 
+    if not OFFSEASON_DEMO_MODE:
+        scheduler.add_job(check_and_update_data, "cron", hour=1, minute=0)
+        scheduler.start()
+    else:
+        logger.info("Scheduler: Suspended for the off-season period.")
     
     yield
     # shutdown
-    scheduler.shutdown()
+    if scheduler.running:
+        scheduler.shutdown()
     PLAYERS.clear()
 
 app = FastAPI(lifespan=lifespan)

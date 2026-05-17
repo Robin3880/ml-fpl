@@ -18,6 +18,14 @@ const PlayerList = () => {
   }, [sortBy, range]);      // re-run whenver sort-by or gw range changes                  
   return (
     <div className="max-w-4xl mx-auto text-gray-300">
+      
+      {/* OFFSEASON DEMO MODE NOTICE */}
+      <div className="bg-amber-950/40 border border-amber-500/30 text-amber-200 rounded-lg p-3 mb-6 text-sm flex gap-2 shadow-md">
+        <div>
+          <span className="font-bold">Offseason Demo Mode Active:</span> The Premier League is currently on summer break. All data is frozen at Gameweek 33 to maintain a prediction window of 5 fixtures for testing and demonstration purposes.
+        </div>
+      </div>
+
       <h2 className="text-2xl font-bold mb-4 text-purple-400">Leaderboard</h2>
 
       {/* parameters / controls */}

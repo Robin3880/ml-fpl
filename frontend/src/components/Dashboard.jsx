@@ -45,6 +45,13 @@ const Dashboard = () => {
   return (
     <div className="max-w-xl mx-auto text-gray-300">
 
+      {/* OFFSEASON DEMO MODE NOTICE */}
+      <div className="bg-amber-950/40 border border-amber-500/30 text-amber-200 rounded-lg p-3 mb-6 text-sm flex gap-2 shadow-md">
+        <div>
+          <span className="font-bold">Offseason Demo Mode Active:</span> The Premier League is currently on summer break. All data is frozen at Gameweek 33 to maintain a prediction window of 5 fixtures for testing and demonstration purposes.
+        </div>
+      </div>
+
       {/* parameters / controls */}
       <div className="bg-gray-800 rounded-lg p-3 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-lg border border-gray-700">
 
