@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 PLAYERS = []
-CURRENT_GW = 1
+CURRENT_GW = None
 
 def get_actual_fpl_gw():
     # fetch current active gw
@@ -118,11 +118,11 @@ def get_player_details(player_id: int):
         "selected_by_percent": player.selected_by_percent,
         "chance_of_playing_this_round": player.chance_of_playing_this_round,
         "xpts_predictions": {
-            f"gw_{CURRENT_GW + 1}": float(player.gw_xp[0]),
-            f"gw_{CURRENT_GW + 2}": float(player.gw_xp[1]),
-            f"gw_{CURRENT_GW + 3}": float(player.gw_xp[2]),
-            f"gw_{CURRENT_GW + 4}": float(player.gw_xp[3]),
-            f"gw_{CURRENT_GW + 5}": float(player.gw_xp[4]),
+            f"gw_{CURRENT_GW}": float(player.gw_xp[0]),
+            f"gw_{CURRENT_GW + 1}": float(player.gw_xp[1]),
+            f"gw_{CURRENT_GW + 2}": float(player.gw_xp[2]),
+            f"gw_{CURRENT_GW + 3}": float(player.gw_xp[3]),
+            f"gw_{CURRENT_GW + 4}": float(player.gw_xp[4]),
         }
     }
 
