@@ -199,6 +199,13 @@ def get_players(num_of_gw: int = 1, sort_by: str = Query("xpts", enum=["xpts","x
 
     return player_dicts
 
+@app.get("/api/status")
+def status():
+    return {
+        "is_demo_mode": OFFSEASON_DEMO_MODE,
+        "current_gameweek": CURRENT_GW,
+    }
+
 @app.get("/health")
 def health_check():
     return {
