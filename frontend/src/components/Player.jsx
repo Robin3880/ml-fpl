@@ -3,14 +3,6 @@ import api from '../api';
 import { useParams } from 'react-router-dom';
 import jerseyImg from '../assets/jersey.svg';
 
-const teamMap = {    // 2025-2026 season
-    1: "Arsenal", 2: "Aston Villa", 3: "Burnley", 4: "Bournemouth",
-    5: "Brentford", 6: "Brighton", 7: "Chelsea", 8: "Crystal Palace",
-    9: "Everton", 10: "Fulham", 11: "Leeds", 12: "Liverpool",
-    13: "Man City", 14: "Man Utd", 15: "Newcastle", 16: "Nott'm Forest",
-    17: "Sunderland", 18: "Spurs", 19: "West Ham", 20: "Wolves"
-};
-
 const Player = () => {
     const { id } = useParams();
     const [Player, setPlayer] = useState([]);          // player variable and its setter funciton, useState saves data between functions runs
@@ -40,7 +32,7 @@ const Player = () => {
                             {Player.position}
                         </span>
                     </div>
-                    <p className="text-xl text-gray-400">{teamMap[Player.team]}</p>
+                    <p className="text-xl text-gray-400">{Player.team_name}</p>
                 </div>
             </div>
 

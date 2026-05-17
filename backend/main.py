@@ -14,19 +14,29 @@ logger = logging.getLogger(__name__)
 
 PLAYERS = []
 CURRENT_GW = None
+TEAM_NAMES_MAP = {}  
+POS_MAP = {}        
 
 def get_actual_fpl_gw():
+    # set pos and team name maps once on initializaion
     # fetch current active gw
+    global TEAM_NAMES_MAP, POS_MAP
+    
     try:
         url = "https://fantasy.premierleague.com/api/bootstrap-static/"
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
-        
-        current_event = next((event for event in data['events'] if event['is_current']), None)
+
+        if not TEAM_NAMES_MAP:
+            TEAM_NAMES_MAP = {t["id"]: t["name"] for t in data["teams"]}
+        if not POS_MAP:
+            POS_MAP = {pos["id"]: pos["singular_name_short"] for pos in data["element_types"]}
+
+        current_event = next((event for event in data["events"] if event["is_current"]), None)
         
         if current_event:
-            return current_event['id']
+            return current_event["id"]
         return None
     except Exception as e:
         logger.error(f"Error fetching FPL data: {e}")
@@ -71,13 +81,14 @@ async def lifespan(app: FastAPI):
 
     # initial load on startup
     logger.info("Startup: Loading initial predictions...")
-    PLAYERS, CURRENT_GW = generate_predictions()
+    PLAYERS = generate_predictions()
+    CURRENT_GW = get_actual_fpl_gw()
     logger.info(f"Startup Complete. Data loaded for GW {CURRENT_GW}")
 
     # start scheduler
     scheduler = BackgroundScheduler()
     # check every day at 1 am
-    scheduler.add_job(check_and_update_data, 'cron', hour=1, minute=0)
+    scheduler.add_job(check_and_update_data, "cron", hour=1, minute=0)
     scheduler.start()
     
     yield
@@ -106,15 +117,14 @@ def get_player_details(player_id: int):
     
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
-    
-    pos_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
     return {
         "id": player.id,
         "name": player.web_name,
         "cost": player.value,
-        "position": pos_map[player.position],
+        "position": POS_MAP[player.position],
         "team": player.team,
+        "team_name": TEAM_NAMES_MAP[player.team],  
         "selected_by_percent": player.selected_by_percent,
         "chance_of_playing_this_round": player.chance_of_playing_this_round,
         "xpts_predictions": {

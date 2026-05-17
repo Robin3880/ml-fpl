@@ -153,4 +153,4 @@ def generate_predictions(season="2025-2026"):
     del base_model
     del defcon_model
     gc.collect()
-    return player_list, current_gw
+    return player_list
