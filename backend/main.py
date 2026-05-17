@@ -17,7 +17,7 @@ CURRENT_GW = None
 TEAM_NAMES_MAP = {}  
 POS_MAP = {}        
 
-# DEMO MODE - during Premier Leauge offseason freeze gw at 33 and disable scheduled data updates
+# DEMO MODE - during Premier Leauge offseason freeze gw at 34 and disable scheduled data updates
 OFFSEASON_DEMO_MODE = True
 
 def get_actual_fpl_gw():

@@ -27,10 +27,10 @@ def generate_predictions(season="2025-2026"):
             break
     
     # DEMO MODE OVERRIDE
-    # set to GW 33 during the Premier League off season so there are always 5 fixtures left (33, 34, 35, 36, 37) to demo the models
+    # set to GW 34 during the Premier League off season so there are always 5 fixtures left (up to last gamweek 38) to demo the models
     OFFSEASON_DEMO_MODE = True 
     if OFFSEASON_DEMO_MODE:
-        current_gw = 33
+        current_gw = 34
 
     # make a dict converting team id to elo for current gameweek,  and a dict for storing players by team later
     current_team_elos = {}
